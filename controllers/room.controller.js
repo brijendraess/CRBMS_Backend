@@ -13,6 +13,7 @@ import {
   getAllAmenitiesQuantityService,
 } from "../services/Room,service.js";
 import Location from "../models/Location.model.js";
+import RoomGallery from "../models/RoomGallery.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {
   const { name, description, location, capacity,tolerancePeriod, sanitationStatus  } = req.body;
@@ -66,6 +67,9 @@ export const getAllRooms = asyncHandler(async (req, res) => {
   const rooms = await Room.findAll({
     include:[{
       model:Location,
+    },
+    {
+      model:RoomGallery,
     }
   ],
   });
@@ -101,27 +105,23 @@ export const updateRoom = asyncHandler(async (req, res) => {
     capacity,
     roomImagePath,
     sanitationStatus,
+    tolerancePeriod,
     isAvailable,
     amenities,
   } = req.body;
 
   const room = await Room.findByPk(roomId);
-
+console.log(req.body)
   if (!room) {
     throw new ApiError(404, "Room not found");
   }
-
   room.name = name ?? room.name;
-  room.location = location ?? room.location;
+  room.location = location ?? room.location.id;
   room.capacity = capacity ?? room.capacity;
   room.roomImagePath = roomImagePath ?? room.roomImagePath;
   room.sanitationStatus = sanitationStatus ?? room.sanitationStatus;
+  room.tolerancePeriod = tolerancePeriod ?? room.tolerancePeriod;
   room.isAvailable = isAvailable ?? room.isAvailable;
-
-  room.amenities =
-    typeof amenities === "string"
-      ? JSON.parse(amenities)
-      : amenities ?? room.amenities;
 
   await room.save();
 
@@ -224,7 +224,7 @@ export const changeStatus = asyncHandler(async (req, res) => {
 });
 
 export const addRoomGallery = asyncHandler(async (req, res) => {
-  const { imageName, createdBy, updatedBy, deletedBy, status } = req.body;
+  const { imageName, roomId, userId, status } = req.body;
 
   let roomImagePath = null;
   if (req.file) {
@@ -281,6 +281,7 @@ export const deleteRoomGallery = asyncHandler(async (req, res) => {
     message: "Room gallery deleted successfully",
   });
 });
+
 
 export const getAllAmenitiesQuantity = asyncHandler(async (req, res) => {
   const result = await getAllAmenitiesQuantityService();

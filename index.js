@@ -4,9 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { dbConnection } from "./database/database.js";
 import router from "./router.js";
-import Location from "./models/Location.model.js";
-import RoomAmenityQuantity from "./models/RoomAmenitiesQuantity.models.js";
-import Room from "./models/Room.models.js";
+import RoomGallery from "./models/RoomGallery.models.js";
 
 const app = express();
 
@@ -56,7 +54,7 @@ dbConnection()
 
 const syncModels = async () => {
   try {
-    const abc = Room;
+    const abc = RoomGallery;
     await abc.sync({ alter: true, force: true });
     console.log(abc, "table synced.");
   } catch (error) {

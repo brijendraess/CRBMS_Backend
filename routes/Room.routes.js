@@ -28,7 +28,7 @@ roomRouter.route("/delete-amenity-quantity/:amenityQuantityId").delete(deleteAme
 roomRouter.route("/add-room").post(uploadRoomImage.single("roomImage"), createRoom);
 roomRouter.route("/all-rooms").get(getAllRooms);
 roomRouter.route("/:roomId").get(getRoomById);
-roomRouter.route("/:roomId").put(updateRoom);
+roomRouter.route("/edit-room/:roomId").put(updateRoom);
 roomRouter.route("/:roomId").delete(deleteRoom);
 roomRouter.route("/login").post(roomLogin);
 roomRouter.route("/change-sanitation-status").post(changeSanitationStatus);
