@@ -5,7 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { sequelize } from "../database/database.js";
-import { QueryTypes, Sequelize } from "sequelize";
+import { Op, QueryTypes, Sequelize } from "sequelize";
 
 export const createCommittee = asyncHandler(async (req, res) => {
   const { name, description, createdByUserId } = req.body;
@@ -29,7 +29,7 @@ export const createCommittee = asyncHandler(async (req, res) => {
     name,
     description,
     // createdBy: createdByUserId,
-    status: "active",
+    status: true,
   });
 
   if (!committee) {
@@ -57,7 +57,7 @@ export const updateCommittee = asyncHandler(async (req, res) => {
   if (!committee) {
     throw new ApiError(404, "Committee not found");
   }
-
+console.log("==========================",committeeId)
   if (name && name !== committee.name) {
     const existingCommittee = await Committee.findOne({
       where: {
@@ -75,7 +75,7 @@ export const updateCommittee = asyncHandler(async (req, res) => {
   committee.name = name || committee.name;
   committee.description = description || committee.description;
   committee.status = status || committee.status;
-  committee.updatedBy = req.user.id;
+  //committee.updatedBy = req.user.id;
   committee.updatedAt = new Date();
 
   await committee.save();
@@ -270,42 +270,16 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
 
 export const getAllCommittees = asyncHandler(async (req, res) => {
   // Fetch committees with their member details
-  const committees = await sequelize.query(
-    `
-    SELECT 
-      c.id AS "id",
-      c.name AS "name",
-      c.description AS "description",
-      c."createdAt" AS "createdAt",
-      c."updatedAt" AS "updatedAt",
-      COUNT(cm.id) AS "memberCount",
-      JSON_AGG(
-        JSON_BUILD_OBJECT(
-          'id', u.id,
-          'fullname', u."fullname",
-          'email', u."email",
-          'avatarPath', u."avatarPath",
-          'role', cm."role",
-          'status', cm."status"
-        )
-      ) AS "members"
-    FROM 
-      "committees" c
-    LEFT JOIN 
-      "committee_members" cm
-    ON 
-      c.id = cm."committeeId"
-    LEFT JOIN 
-      "users" u
-    ON 
-      cm."userId" = u.id
-    GROUP BY 
-      c.id
-    ORDER BY 
-      c."createdAt" DESC
-    `,
-    { type: sequelize.QueryTypes.SELECT }
-  );
+  const committees = await Committee.findAll({
+    include:[{
+      model:CommitteeMember,
+      include:[{
+        model:User
+      }
+      ]
+    },
+  ]
+  });
 
   return res
     .status(200)
@@ -321,7 +295,6 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
 // Get committee details
 export const getCommitteeDetails = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
-
   const committee = await Committee.findOne({
     where: {
       id: committeeId,

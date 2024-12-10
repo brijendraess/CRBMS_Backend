@@ -1,9 +1,10 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
 import Room from "./Room.models.js";
+import User from "./User.models.js";
 
 const RoomGallery = sequelize.define(
-  "RoomAmenity",
+  "RoomGallery",
   {
     id: {
       type: DataTypes.UUID,
@@ -14,18 +15,6 @@ const RoomGallery = sequelize.define(
       type: DataTypes.STRING(100),
       allowNull: false,
     },
-    createdBy: {
-      type: DataTypes.INTEGER,
-      defaultValue: null,
-    },
-    updatedBy: {
-        type: DataTypes.INTEGER,
-        defaultValue: null,
-      },
-    deletedBy: {
-        type: DataTypes.INTEGER,
-        defaultValue: null,
-      },
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
@@ -39,8 +28,44 @@ const RoomGallery = sequelize.define(
 );
 
 Room.hasMany(RoomGallery, {
-    foreignKey: 'roomId', // Foreign key in the Post model
+  foreignKey: {
+    name: 'roomId',  // Foreign key in RoomAmenityQuantity
+    type: DataTypes.UUID,  // Ensure it's UUID if RoomAmenity has UUID primary key
+  },
+  onDelete: 'CASCADE' // Optional: What happens when a User is deleted
+});
+
+RoomGallery.belongsTo(Room, { foreignKey: 'roomId' });
+
+  User.hasMany(RoomGallery, {
+    foreignKey: {
+      name: 'createdBy',  // Foreign key in RoomGallery
+      type: DataTypes.UUID,  // Ensure it's UUID if User has UUID primary key
+    },
     onDelete: 'CASCADE' // Optional: What happens when a User is deleted
   });
 
+  RoomGallery.belongsTo(User, { foreignKey: 'createdBy' });
+
+  User.hasMany(RoomGallery, {
+    foreignKey: {
+      name: 'updatedBy',  // Foreign key in RoomGallery
+      type: DataTypes.UUID,  // Ensure it's UUID if User has UUID primary key
+    },
+    onDelete: 'CASCADE' // Optional: What happens when a User is deleted
+  });
+
+  RoomGallery.belongsTo(User, { foreignKey: 'updatedBy' });
+
+  User.hasMany(RoomGallery, {
+    foreignKey: {
+      name: 'deletedBy',  // Foreign key in RoomGallery
+      type: DataTypes.UUID,  // Ensure it's UUID if User has UUID primary key
+    },
+    onDelete: 'CASCADE' // Optional: What happens when a User is deleted
+  });
+
+  RoomGallery.belongsTo(User, { foreignKey: 'deletedBy' });
+
 export default RoomGallery;
+

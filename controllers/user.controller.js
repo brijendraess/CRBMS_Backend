@@ -32,6 +32,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
     fullname,
+    role,
     phoneNumber,
     committee, // May arrive as a string
   } = req.body;
@@ -44,20 +45,18 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "All fields are required");
   }
-
   // Ensure committee is parsed if it's sent as a string
-  let parsedCommittee;
-  try {
-    parsedCommittee = Array.isArray(committee)
-      ? committee
-      : JSON.parse(committee);
-  } catch (error) {
-    throw new ApiError(
-      400,
-      "Invalid committee format. Must be a valid JSON array."
-    );
-  }
-
+  let parsedCommittee=["e7648419-2d92-4589-97ee-5f7f1531403a"];
+  // try {
+  //   parsedCommittee = Array.isArray(committee)? committee
+  //     
+  //     : JSON.parse(committee);
+  // } catch (error) {
+  //   throw new ApiError(
+  //     400,
+  //     "Invalid committee format. Must be a valid JSON array."
+  //   );
+  // }
   // Validate that the parsed committee is an array of strings
   if (
     !Array.isArray(parsedCommittee) ||
@@ -86,14 +85,15 @@ const registerUser = asyncHandler(async (req, res) => {
     });
 
     // Add the user to committees if provided
+    
     if (parsedCommittee.length > 0) {
       const committeeEntries = parsedCommittee.map((committeeId) => ({
         committeeId,
         userId: newUser.id,
-        role: "User", // Default role for new users
+        role: role, // Default role for new users
         status: "active",
       }));
-
+      console.log("Helooooooooooooo============================================",committeeEntries)
       await CommitteeMember.bulkCreate(committeeEntries);
     }
 

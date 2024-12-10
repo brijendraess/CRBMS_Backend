@@ -51,8 +51,8 @@ const User = sequelize.define(
       defaultValue: false,
     },
     status: {
-      type: DataTypes.STRING(20),
-      defaultValue: "active",
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
     avatarPath: {
       type: DataTypes.STRING(255),

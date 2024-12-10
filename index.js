@@ -2,12 +2,9 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { dbConnection } from "./database/database.js";
+import { dbConnection, sequelize } from "./database/database.js";
 import router from "./router.js";
-import Location from "./models/Location.model.js";
-import RoomAmenityQuantity from "./models/RoomAmenitiesQuantity.models.js";
-import Room from "./models/Room.models.js";
-import CommitteeMember from "./models/CommitteeMember.models.js";
+import RoomGallery from "./models/RoomGallery.models.js";
 
 const app = express();
 
@@ -57,7 +54,7 @@ dbConnection()
 
 const syncModels = async () => {
   try {
-    const abc = CommitteeMember;
+    const abc = RoomGallery;
     await abc.sync({ alter: true, force: true });
     console.log(abc, "table synced.");
   } catch (error) {
@@ -65,3 +62,19 @@ const syncModels = async () => {
   }
 };
 //syncModels();
+
+// Sync all tables
+
+// (async () => {
+//   try {
+//     await sequelize.authenticate();
+//     console.log("Database connected successfully.");
+
+//     await sequelize.sync({ force: true }); // Change to `true` to drop and recreate tables
+//     console.log("All models were synchronized successfully.");
+//   } catch (error) {
+//     console.error("Unable to connect to the database or sync models:", error);
+//   } finally {
+//     await sequelize.close();
+//   }
+// })();

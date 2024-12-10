@@ -36,6 +36,22 @@ export const getAllRoomAmenities = asyncHandler(async (req, res) => {
     );
 });
 
+export const getSingleRoomAmenityController = asyncHandler(async (req, res) => {
+  const { amenityId } = req.params;
+  const roomAmenity = await RoomAmenity.findOne({
+    where: {
+      id: amenityId,
+      deletedAt: null,
+    },
+  });
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(201, { roomAmenity }, "Room fetch successfully")
+    );
+});
+
 export const getAllActiveRoomAmenities = asyncHandler(async (req, res) => {
 
   const result = await getAllActiveAmenityService();
