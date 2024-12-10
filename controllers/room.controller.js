@@ -226,45 +226,42 @@ export const changeStatus = asyncHandler(async (req, res) => {
 export const addRoomGallery = asyncHandler(async (req, res) => {
   const { imageName, roomId, userId, status } = req.body;
 
-  let roomImagePath = null;
-  if (req.file) {
-    roomImagePath = `room-images/${name.replace(/\s+/g, "_")}${path
-      .extname(req.file.originalname)
-      .toLowerCase()}`;
+  try {
+    console.log("Uploaded files:", req.files);
+    res.status(200).json({
+      message: "Files uploaded successfully",
+      files: req.files,
+    });
+  } catch (error) {
+    console.error("Error uploading files:", error);
+    res.status(500).json({ message: "Failed to upload files" });
   }
 
-  // Parse amenities if it’s a string, ensuring it’s an array
-  const formattedAmenities = Array.isArray(amenities)
-    ? amenities
-    : typeof amenities === "string"
-    ? JSON.parse(amenities)
-    : [];
+  // const room = await Room.create({
+  //   createdBy,
+  //   updatedBy,
+  //   deletedBy,
+  //   status,
+  //   roomImagePath,
+  // });
 
-  const room = await Room.create({
-    createdBy,
-    updatedBy,
-    deletedBy,
-    status,
-    roomImagePath,
-  });
+  // if (!room) {
+  //   if (req.file) fs.unlinkSync(`public/${roomImagePath}`); // Remove image if room creation fails
+  //   throw new ApiError(500, "Failed to create room");
+  // }
 
-  if (!room) {
-    if (req.file) fs.unlinkSync(`public/${roomImagePath}`); // Remove image if room creation fails
-    throw new ApiError(500, "Failed to create room");
-  }
+  // if (req.file) {
+  //   const newRoomImagePath = `room-images/${name.replace(/\s+/g, "_")}_${
+  //     room.id
+  //   }${path.extname(req.file.originalname).toLowerCase()}`;
+  //   fs.renameSync(`public/${roomImagePath}`, `public/${newRoomImagePath}`);
+  //   room.roomImagePath = newRoomImagePath;
+  //   await room.save();
+  // }
 
-  if (req.file) {
-    const newRoomImagePath = `room-images/${name.replace(/\s+/g, "_")}_${
-      room.id
-    }${path.extname(req.file.originalname).toLowerCase()}`;
-    fs.renameSync(`public/${roomImagePath}`, `public/${newRoomImagePath}`);
-    room.roomImagePath = newRoomImagePath;
-    await room.save();
-  }
-
-  return res
-    .status(201)
-    .json(new ApiResponse(200, { room }, "Room Gallery Created Successfully"));
+  // return res
+  //   .status(201)
+  //   .json(new ApiResponse(200, { room }, "Room Gallery Created Successfully"));
 });
 
 export const deleteRoomGallery = asyncHandler(async (req, res) => {

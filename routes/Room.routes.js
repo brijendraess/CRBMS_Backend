@@ -17,6 +17,7 @@ import {
   editAmenityQuantity,
 } from "../controllers/room.controller.js";
 import uploadRoomImage from "../middlewares/roomMulter.middleware.js";
+import multipleGalleryUpload from "../middlewares/galleryRoomMulter.middleware.js";
 
 const roomRouter = express.Router();
 
@@ -33,16 +34,9 @@ roomRouter.route("/:roomId").delete(deleteRoom);
 roomRouter.route("/login").post(roomLogin);
 roomRouter.route("/change-sanitation-status").post(changeSanitationStatus);
 roomRouter.route("/change-status").post(changeStatus);
-roomRouter.route("/add-room-gallery").post(uploadRoomImage.single("roomImage"), addRoomGallery);
+roomRouter.route("/add-room-gallery").post(multipleGalleryUpload.array("images", 10), addRoomGallery);
 roomRouter.route("/delete-room-gallery/:roomId").delete(deleteRoomGallery);
 
 roomRouter.route("/edit-amenity-quantity/:amenityQuantityId").put(editAmenityQuantity);
-
-
-
-
-
-
-
 
 export default roomRouter;

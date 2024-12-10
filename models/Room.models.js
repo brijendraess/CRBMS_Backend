@@ -38,12 +38,6 @@ const Room = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
-
-    // geoLocation: {
-    //   type: DataTypes.GEOMETRY("POINT"),
-    //   allowNull: true,
-    //   field: "geo_location", // maps to the database field
-    // },
   },
   {
     tableName: "rooms",

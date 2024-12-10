@@ -1,5 +1,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
+import User from "./User.models.js";
+import Meeting from "./Meeting.models.js";
 
 const Notification = sequelize.define(
   "Notification",
@@ -21,7 +23,7 @@ const Notification = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Users", // Assuming you have a User model
+        model: User, // Assuming you have a User model
         key: "id",
       },
     },
@@ -29,7 +31,7 @@ const Notification = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: "Meetings", // Assuming you have a Meeting model
+        model: Meeting, // Assuming you have a Meeting model
         key: "id",
       },
     },

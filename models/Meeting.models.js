@@ -1,5 +1,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
+import User from "./User.models.js";
+import Room from "./Room.models.js";
 
 const Meeting = sequelize.define(
   "Meeting",
@@ -13,7 +15,7 @@ const Meeting = sequelize.define(
       type: DataTypes.UUID, // Foreign key to link with Room table
       allowNull: false,
       references: {
-        model: "rooms", // Name of the Room table
+        model: Room, // Name of the Room table
         key: "id",
       },
       onDelete: "CASCADE", // Delete meeting if the room is deleted
@@ -22,7 +24,7 @@ const Meeting = sequelize.define(
       type: DataTypes.UUID, // Foreign key to link with User table
       allowNull: false,
       references: {
-        model: "users", // Name of the User table
+        model: User, // Name of the User table
         key: "id",
       },
       onDelete: "SET NULL", // Keep meeting if user is deleted
