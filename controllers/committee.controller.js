@@ -210,40 +210,28 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
 
   try {
     // Verify if the committee exists and is not soft-deleted
-    const committeeExistsQuery = `
-      SELECT id 
-      FROM committees 
-      WHERE id = :committeeId
-    `;
-
-    const [committee] = await sequelize.query(committeeExistsQuery, {
-      replacements: { committeeId },
-      type: QueryTypes.SELECT,
-    });
+   
+    const committee = await Committee.findAll({
+      where:{
+        id:committeeId
+      }
+    })
 
     if (!committee) {
       throw new ApiError(404, "Committee not found");
     }
 
-    // Fetch active members with user details using a raw query
-    const membersQuery = `
-  SELECT 
-    cm.id AS memberId, 
-    cm.status, 
-    u.id AS userId, 
-    u.fullname, 
-    u.email, 
-    u."phoneNumber", 
-    u."avatarPath"
-  FROM "committee_members" cm
-  INNER JOIN "users" u ON cm."userId" = u.id
-  WHERE cm."committeeId" = :committeeId AND cm.status = 'active'
-`;
 
-    const members = await sequelize.query(membersQuery, {
-      replacements: { committeeId },
-      type: QueryTypes.SELECT,
-    });
+
+    const members = await CommitteeMember.findAll({
+     where:{ committeeId:committeeId},
+     include:[
+      {
+      model:User
+     },{
+      model:Committee
+     }]
+    })
 
     if (!members.length) {
       return res
@@ -295,6 +283,7 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
 // Get committee details
 export const getCommitteeDetails = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
+  console.log("+++++++++++++++++++++++++++++",committeeId)
   const committee = await Committee.findOne({
     where: {
       id: committeeId,
