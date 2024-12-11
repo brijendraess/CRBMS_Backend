@@ -15,6 +15,6 @@ locationRouter.route("/locations").get(getAllLocations);
 locationRouter.route("/activeLocations").get(getAllActiveLocations);
 locationRouter.route("/locations/:id").put(updateLocation);
 locationRouter.route("/locations/:id/status").patch(changeLocationStatus);
-locationRouter.route("/locations/:id").delete(deleteLocation);
+locationRouter.route("/locations/delete/:id").delete(deleteLocation);
 
 export default locationRouter;
