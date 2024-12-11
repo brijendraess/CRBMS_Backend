@@ -41,10 +41,8 @@ export const getSingleRoomAmenityController = asyncHandler(async (req, res) => {
   const roomAmenity = await RoomAmenity.findOne({
     where: {
       id: amenityId,
-      deletedAt: null,
     },
   });
-
   res
     .status(200)
     .json(
@@ -65,10 +63,10 @@ export const getAllActiveRoomAmenities = asyncHandler(async (req, res) => {
 });
 
 export const updateRoomAmenity = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const { amenityId } = req.params;
   const { name, description, status, quantity } = req.body;
 
-  const roomAmenity = await RoomAmenity.findByPk(id);
+  const roomAmenity = await RoomAmenity.findByPk(amenityId);
 
   if (!roomAmenity) {
     throw new ApiError(404, "Room Amenity not found");
@@ -127,4 +125,25 @@ export const updateRoomAmenityQuantity = asyncHandler(async (req, res) => {
     message: "Room Amenity quantity updated successfully",
     data: roomAmenity,
   });
+});
+
+export const changeAmenityStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const roomAmenity = await RoomAmenity.findByPk(id);
+  if (!roomAmenity) {
+    throw new ApiError(404, "Amenity not found");
+  } 
+  roomAmenity.status = !roomAmenity.dataValues.status;
+  await roomAmenity.save();
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { roomAmenity },
+        `Amenity status changed to ${roomAmenity?.dataValues?.status ? "active" : "inactive"}`
+      )
+    );
 });
