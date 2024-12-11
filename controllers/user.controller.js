@@ -46,17 +46,17 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
   // Ensure committee is parsed if it's sent as a string
-  let parsedCommittee=["e7648419-2d92-4589-97ee-5f7f1531403a"];
-  // try {
-  //   parsedCommittee = Array.isArray(committee)? committee
-  //     
-  //     : JSON.parse(committee);
-  // } catch (error) {
-  //   throw new ApiError(
-  //     400,
-  //     "Invalid committee format. Must be a valid JSON array."
-  //   );
-  // }
+  let parsedCommittee=[];
+  try {
+    parsedCommittee = Array.isArray(committee)? committee
+      
+      : JSON.parse(committee);
+  } catch (error) {
+    throw new ApiError(
+      400,
+      "Invalid committee format. Must be a valid JSON array."
+    );
+  }
   // Validate that the parsed committee is an array of strings
   if (
     !Array.isArray(parsedCommittee) ||
@@ -90,11 +90,10 @@ const registerUser = asyncHandler(async (req, res) => {
       const committeeEntries = parsedCommittee.map((committeeId) => ({
         committeeId,
         userId: newUser.id,
-        role: role, // Default role for new users
-        status: "active",
+        status: true,
       }));
-      console.log("Helooooooooooooo============================================",committeeEntries)
-      await CommitteeMember.bulkCreate(committeeEntries);
+      await CommitteeMember.sync(); // Ensure table exists
+      await CommitteeMember.bulkCreate(committeeEntries,{validate:true});
     }
 
     const createdUser = await User.findByPk(newUser.id, {
@@ -148,14 +147,13 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const OTP = generateOTP();
-  console.log(OTP, new Date(Date.now() + 0.5 * 60 * 60 * 1000));
 
   user.tempOTP = OTP;
   user.otpExpiresAt = new Date(Date.now() + 0.5 * 60 * 60 * 1000);
   await user.save();
 
   await sendOTP(user.email, OTP);
-
+console.log("OTP : ",OTP)
   return res
     .status(201)
     .json(
@@ -246,7 +244,6 @@ const getMyProfile = asyncHandler(async (req, res) => {
 // get user by id(For Admin)
 const getUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log(id);
 
   if (!id) {
     throw new ApiError(400, "Please provide a valid user ID");
@@ -275,7 +272,6 @@ const getUserById = asyncHandler(async (req, res) => {
       replacements: { id },
       type: QueryTypes.SELECT,
     });
-    console.log(result);
 
     if (!result.length) {
       throw new ApiError(
@@ -295,8 +291,6 @@ const getUserById = asyncHandler(async (req, res) => {
         .filter((row) => row.committeename) // Filter out rows with no committee
         .map((row) => row.committeename), // Extract committee names
     };
-
-    console.log("Structured User Data:", userData);
 
     return res
       .status(200)
@@ -323,6 +317,9 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
   const users = await User.findAndCountAll({
     attributes: { exclude: ["password", "refreshToken"] },
+    order: [
+      ['createdAt', 'DESC'],
+    ],
     limit: parseInt(limit),
     offset: parseInt(offset),
     paranoid: false,
@@ -576,8 +573,6 @@ const updateBlockStatus = asyncHandler(async (req, res) => {
   const { userId } = req.body;
 
   const { isBlocked } = req.body;
-
-  console.log(userId, isBlocked);
 
   const user = await User.findOne({
     where: { id: userId },
