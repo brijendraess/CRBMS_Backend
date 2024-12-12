@@ -16,7 +16,14 @@ import Location from "../models/Location.model.js";
 import RoomGallery from "../models/RoomGallery.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {
-  const { name, description, location, capacity,tolerancePeriod, sanitationStatus  } = req.body;
+  const {
+    name,
+    description,
+    location,
+    capacity,
+    tolerancePeriod,
+    sanitationStatus,
+  } = req.body;
 
   if (!name || !location || !capacity) {
     throw new ApiError(400, "Please fill in all fields");
@@ -41,7 +48,7 @@ export const createRoom = asyncHandler(async (req, res) => {
     capacity,
     tolerancePeriod,
     roomImagePath,
-    sanitationStatus, 
+    sanitationStatus,
   });
 
   if (!room) {
@@ -65,13 +72,14 @@ export const createRoom = asyncHandler(async (req, res) => {
 
 export const getAllRooms = asyncHandler(async (req, res) => {
   const rooms = await Room.findAll({
-    include:[{
-      model:Location,
-    },
-    {
-      model:RoomGallery,
-    }
-  ],
+    include: [
+      {
+        model: Location,
+      },
+      {
+        model: RoomGallery,
+      },
+    ],
   });
 
   return res
@@ -81,13 +89,11 @@ export const getAllRooms = asyncHandler(async (req, res) => {
 
 export const getRoomById = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
-  console.log(roomId);
 
   const room = await Room.findByPk(roomId, {
     attributes: { exclude: ["password"] },
   });
 
-  console.log(room);
   if (!room) {
     throw new ApiError(404, "Room not found");
   }
@@ -111,7 +117,6 @@ export const updateRoom = asyncHandler(async (req, res) => {
   } = req.body;
 
   const room = await Room.findByPk(roomId);
-console.log(req.body)
   if (!room) {
     throw new ApiError(404, "Room not found");
   }
@@ -135,7 +140,6 @@ console.log(req.body)
 export const deleteRoom = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
 
-  console.log(roomId);
   const room = await Room.findByPk(roomId);
 
   if (!room) {
@@ -224,61 +228,62 @@ export const changeStatus = asyncHandler(async (req, res) => {
 });
 
 export const addRoomGallery = asyncHandler(async (req, res) => {
-  const { imageName, roomId, userId, status } = req.body;
+  const { images, roomId, userId, status } = req.body;
 
   try {
-    console.log("Uploaded files:", req.files);
+    // Prepare data for bulkCreate
+    const galleryEntries = req.files.map((file, index) => ({
+      imageName: file.filename, // Saved file name
+      roomId: roomId[index],
+      createdBy: userId[index],
+      status: status[index],
+    }));
+    const roomGallery = await RoomGallery.bulkCreate(galleryEntries);
     res.status(200).json({
       message: "Files uploaded successfully",
       files: req.files,
+      roomGallery: roomGallery,
     });
   } catch (error) {
     console.error("Error uploading files:", error);
     res.status(500).json({ message: "Failed to upload files" });
   }
-
-  // const room = await Room.create({
-  //   createdBy,
-  //   updatedBy,
-  //   deletedBy,
-  //   status,
-  //   roomImagePath,
-  // });
-
-  // if (!room) {
-  //   if (req.file) fs.unlinkSync(`public/${roomImagePath}`); // Remove image if room creation fails
-  //   throw new ApiError(500, "Failed to create room");
-  // }
-
-  // if (req.file) {
-  //   const newRoomImagePath = `room-images/${name.replace(/\s+/g, "_")}_${
-  //     room.id
-  //   }${path.extname(req.file.originalname).toLowerCase()}`;
-  //   fs.renameSync(`public/${roomImagePath}`, `public/${newRoomImagePath}`);
-  //   room.roomImagePath = newRoomImagePath;
-  //   await room.save();
-  // }
-
-  // return res
-  //   .status(201)
-  //   .json(new ApiResponse(200, { room }, "Room Gallery Created Successfully"));
 });
 
 export const deleteRoomGallery = asyncHandler(async (req, res) => {
-  const { roomId } = req.params;
-
-  const room = await Room.findByPk(roomId);
+  const { galleryId } = req.params;
+  const room = await RoomGallery.findOne({
+    where: { id: galleryId },
+  });
 
   if (!room) {
     throw new ApiError(404, "Room gallery not found");
   }
-  await room.destroy();
+  await room.destroy().then((res) => {
+    const filePath = `public/room-gallery/${room.imageName}`;
+    // Deleting the files
+
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+      if (err) {
+        console.error("File does not exist");
+        return;
+      }
+
+      // File exists, proceed to delete
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(`Error deleting file: ${err.message}`);
+          return;
+        }
+        console.log("File successfully deleted");
+      });
+    });
+  });
   res.status(200).json({
     success: true,
     message: "Room gallery deleted successfully",
   });
 });
-
 
 export const getAllAmenitiesQuantity = asyncHandler(async (req, res) => {
   const result = await getAllAmenitiesQuantityService();
@@ -326,17 +331,9 @@ export const createAmenityQuantity = asyncHandler(async (req, res) => {
     );
 });
 
-
-
-
-
 export const editAmenityQuantity = asyncHandler(async (req, res) => {
   const { amenityQuantityId } = req.params;
-  const {
-    quantity,
-    status,
-    updatedBy,
-  } = req.body;
+  const { quantity, status, updatedBy } = req.body;
 
   const result = await editAmenityQuantityService(
     quantity,
@@ -354,16 +351,29 @@ export const editAmenityQuantity = asyncHandler(async (req, res) => {
 
 export const deleteAmenityQuantity = asyncHandler(async (req, res) => {
   const { amenityQuantityId } = req.params;
-  const {
-    deletedBy,
-  } = req.body;
+  const { deletedBy } = req.body;
   const result = await deleteAmenityQuantityService(
-    amenityQuantityId,deletedBy
+    amenityQuantityId,
+    deletedBy
   );
 
   res.status(200).json({
     success: true,
-    data:result,
+    data: result,
     message: "Room amenity quantity deleted successfully",
   });
+});
+
+export const getSingleRoomController = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  const roomGallery = await RoomGallery.findAll({
+    where: {
+      roomId: roomId,
+    },
+  });
+  res
+    .status(200)
+    .json(
+      new ApiResponse(201, { roomGallery }, "Room gallery fetch successfully")
+    );
 });
