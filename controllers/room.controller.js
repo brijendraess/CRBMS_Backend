@@ -307,10 +307,8 @@ export const getAllAmenitiesActiveQuantity = asyncHandler(async (req, res) => {
 });
 
 export const createAmenityQuantity = asyncHandler(async (req, res) => {
-  const { quantity, status, createdBy, roomId, amenityId } = req.body;
-  if (!quantity) {
-    throw new ApiError(400, "Quantity Is required");
-  }
+ console.log(req.body)
+
 
   const result = await createAmenityQuantityService(
     quantity,
