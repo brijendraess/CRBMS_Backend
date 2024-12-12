@@ -57,7 +57,7 @@ export const updateCommittee = asyncHandler(async (req, res) => {
   if (!committee) {
     throw new ApiError(404, "Committee not found");
   }
-console.log("==========================",committeeId)
+  console.log("==========================", committeeId);
   if (name && name !== committee.name) {
     const existingCommittee = await Committee.findOne({
       where: {
@@ -210,37 +210,34 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
 
   try {
     // Verify if the committee exists and is not soft-deleted
-   
     const committee = await Committee.findAll({
-      where:{
-        id:committeeId
-      }
-    })
+      where: {
+        id: committeeId,
+      },
+    });
 
     if (!committee) {
       throw new ApiError(404, "Committee not found");
     }
 
-
-
     const members = await CommitteeMember.findAll({
-     where:{ committeeId:committeeId},
-     include:[
-      {
-      model:User
-     },{
-      model:Committee
-     }]
-    })
+      where: { committeeId: committeeId },
+      include: [
+        {
+          model: User,
+          attributes: ["id", "email", "fullname", "phoneNumber", "avatarPath"],
+        },
+        {
+          model: Committee,
+        },
+      ],
+    });
 
     if (!members.length) {
       return res
         .status(200)
         .json(new ApiResponse(200, { members: [] }, "No active members found"));
     }
-
-    // console.log("Members retrieved successfully:", members);
-
     return res
       .status(200)
       .json(
@@ -252,21 +249,30 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
       );
   } catch (error) {
     console.error("Error retrieving committee members:", error);
-    throw error; // Forward the error to the error handler
+    throw error;
   }
 });
 
 export const getAllCommittees = asyncHandler(async (req, res) => {
   // Fetch committees with their member details
   const committees = await Committee.findAll({
-    include:[{
-      model:CommitteeMember,
-      include:[{
-        model:User
-      }
-      ]
-    },
-  ]
+    include: [
+      {
+        model: CommitteeMember,
+        include: [
+          {
+            model: User,
+            attributes: [
+              "id",
+              "email",
+              "fullname",
+              "phoneNumber",
+              "avatarPath",
+            ],
+          },
+        ],
+      },
+    ],
   });
 
   return res
@@ -283,7 +289,7 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
 // Get committee details
 export const getCommitteeDetails = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
-  console.log("+++++++++++++++++++++++++++++",committeeId)
+  console.log("+++++++++++++++++++++++++++++", committeeId);
   const committee = await Committee.findOne({
     where: {
       id: committeeId,
