@@ -22,6 +22,10 @@ const Room = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    sanitationPeriod: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     description: {
       type: DataTypes.STRING,
       allowNull: true,

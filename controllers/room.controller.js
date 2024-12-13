@@ -23,6 +23,8 @@ export const createRoom = asyncHandler(async (req, res) => {
     capacity,
     tolerancePeriod,
     sanitationStatus,
+    sanitationPeriod,
+    isAvailable,
   } = req.body;
 
   if (!name || !location || !capacity) {
@@ -47,8 +49,10 @@ export const createRoom = asyncHandler(async (req, res) => {
     location,
     capacity,
     tolerancePeriod,
+    sanitationPeriod,
     roomImagePath,
     sanitationStatus,
+    isAvailable,
   });
 
   if (!room) {
@@ -112,6 +116,7 @@ export const updateRoom = asyncHandler(async (req, res) => {
     roomImagePath,
     sanitationStatus,
     tolerancePeriod,
+    sanitationPeriod,
     isAvailable,
     amenities,
   } = req.body;
@@ -126,6 +131,7 @@ export const updateRoom = asyncHandler(async (req, res) => {
   room.roomImagePath = roomImagePath ?? room.roomImagePath;
   room.sanitationStatus = sanitationStatus ?? room.sanitationStatus;
   room.tolerancePeriod = tolerancePeriod ?? room.tolerancePeriod;
+  room.sanitationPeriod = sanitationPeriod ?? room.sanitationPeriod;
   room.isAvailable = isAvailable ?? room.isAvailable;
 
   await room.save();

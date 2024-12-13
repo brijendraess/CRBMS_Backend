@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
-import User from "./User.models.js";
 import Room from "./Room.models.js";
+import User from "./User.models.js";
 
 const Meeting = sequelize.define(
   "Meeting",
@@ -11,29 +11,16 @@ const Meeting = sequelize.define(
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
     },
-    roomId: {
-      type: DataTypes.UUID, // Foreign key to link with Room table
-      allowNull: false,
-      references: {
-        model: Room, // Name of the Room table
-        key: "id",
-      },
-      onDelete: "CASCADE", // Delete meeting if the room is deleted
-    },
-    userId: {
-      type: DataTypes.UUID, // Foreign key to link with User table
-      allowNull: false,
-      references: {
-        model: User, // Name of the User table
-        key: "id",
-      },
-      onDelete: "SET NULL", // Keep meeting if user is deleted
-    },
-    title: {
+
+    subject: {
       type: DataTypes.STRING(200),
       allowNull: false,
     },
-    description: {
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    additionalEquipment: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
@@ -54,20 +41,11 @@ const Meeting = sequelize.define(
       allowNull: false,
       defaultValue: false, // Public by default
     },
-    attendees: {
-      type: DataTypes.ARRAY(DataTypes.JSON), // List of users or emails
-      allowNull: true,
-      defaultValue: [], // Empty list initially
-    },
+
     status: {
       type: DataTypes.ENUM("scheduled", "ongoing", "completed", "cancelled"),
       defaultValue: "scheduled", // Default to scheduled
     },
-    // notificationsSent: {
-    //   type: DataTypes.BOOLEAN, // Track if notifications were sent
-    //   allowNull: false,
-    //   defaultValue: false,
-    // },
   },
   {
     tableName: "meetings",
@@ -75,5 +53,18 @@ const Meeting = sequelize.define(
     paranoid: true, // Enables soft delete with deletedAt field
   }
 );
+
+Room.hasMany(Meeting, {
+  foreignKey: {
+    name: 'roomId',  // Foreign key in userId
+    type: DataTypes.UUID,  // Ensure it's UUID if Room has UUID primary key
+  },
+    onDelete: 'CASCADE' // Optional: What happens when a User is deleted
+  });
+
+Meeting.belongsTo(Room, { foreignKey: 'roomId' });
+
+Meeting.belongsToMany(User, { through: "MeetingUser" });
+User.belongsToMany(Meeting, { through: "MeetingUser" });
 
 export default Meeting;
