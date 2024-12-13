@@ -22,8 +22,8 @@ import multipleGalleryUpload from "../middlewares/galleryRoomMulter.middleware.j
 
 const roomRouter = express.Router();
 
-roomRouter.route("/amenity-quantity-all").get(getAllAmenitiesQuantity);
-roomRouter.route("/all-amenity-active-quantity").get(getAllAmenitiesActiveQuantity);
+roomRouter.route("/amenity-quantity-all/:roomId").get(getAllAmenitiesQuantity);
+roomRouter.route("/all-amenity-active-quantity/:roomId").get(getAllAmenitiesActiveQuantity);
 roomRouter.route("/add-amenity-quantity").post(createAmenityQuantity);
 roomRouter.route("/delete-amenity-quantity/:amenityQuantityId").delete(deleteAmenityQuantity);
 

@@ -4,7 +4,7 @@ import RoomAmenity from "../models/RoomAmenity.model.js";
 import User from "../models/User.models.js";
 import { ApiError } from "../utils/ApiError.js";
 
-export const getAllAmenitiesQuantityService = async () => {
+export const getAllAmenitiesQuantityService = async (roomId) => {
   try {
     const quantityAmenities = await RoomAmenityQuantity.findAll({
       include: [
@@ -18,6 +18,9 @@ export const getAllAmenitiesQuantityService = async () => {
           model: User,
         },
       ],
+      where:{
+        roomId:roomId
+      },
       order: [["createdAt", "DESC"]],
     });
 
@@ -39,6 +42,20 @@ export const createAmenityQuantityService = async (
   amenityId
 ) => {
   try {
+
+    const roomAmenityQuantity = await RoomAmenityQuantity.findOne(
+      {
+        where:{
+          roomId:roomId,
+          amenityId:amenityId
+        }
+      }
+    );
+    if (roomAmenityQuantity) {
+      throw new ApiError(404, "Room amenity already present");
+    }
+
+
     const roomAmenity = await RoomAmenityQuantity.create({
       quantity,
       status,
@@ -54,7 +71,7 @@ export const createAmenityQuantityService = async (
   }
 };
 
-export const getAllAmenitiesActiveQuantityService = async () => {
+export const getAllAmenitiesActiveQuantityService = async (roomId) => {
   try {
     const quantityAmenities = await RoomAmenityQuantity.findAll({
       include: [
@@ -69,7 +86,7 @@ export const getAllAmenitiesActiveQuantityService = async () => {
         },
       ],
       order: [["createdAt", "DESC"]],
-      where: { status: true },
+      where: { status: true, roomId:roomId },
     });
 
     if (!quantityAmenities.length) {
@@ -111,8 +128,7 @@ export const editAmenityQuantityService = async (
 };
 
 export const deleteAmenityQuantityService = async (
-  amenityQuantityId,
-  deletedBy
+  amenityQuantityId
 ) => {
   try {
     const roomAmenityQuantity = await RoomAmenityQuantity.findByPk(
