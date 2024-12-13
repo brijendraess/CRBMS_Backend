@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import { dbConnection, sequelize } from "./database/database.js";
 import router from "./router.js";
 import RoomGallery from "./models/RoomGallery.models.js";
+import Meeting from "./models/Meeting.models.js";
+import Room from "./models/Room.models.js";
 
 const app = express();
 
@@ -55,14 +57,14 @@ dbConnection()
 
 const syncModels = async () => {
   try {
-    const abc = RoomGallery;
+    const abc = Room;
     await abc.sync({ alter: true, force: true });
     console.log(abc, "table synced.");
   } catch (error) {
     console.error("Error syncing ", abc, " table:", error);
   }
 };
-//syncModels();
+syncModels();
 
 // Sync all tables
 

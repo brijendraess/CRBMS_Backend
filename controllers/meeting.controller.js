@@ -10,9 +10,11 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
     roomId,
-    title,
-    description,
+    subject,
+    notes,
+    agenda,
     startTime,
+    additionalEquipment,
     endTime,
     date,
     isPrivate,
@@ -29,7 +31,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Room Not Found, Please Select a Valid Room");
   }
 
-  if (!title || !description || !startTime || !endTime || !date) {
+  if (!agenda || !subject || !startTime || !endTime || !date) {
     throw new ApiError(400, "All required fields must be provided");
   }
 
@@ -45,8 +47,8 @@ export const addMeeting = asyncHandler(async (req, res) => {
   const overlappingMeeting = await Meeting.findOne({
     where: {
       roomId,
-      startTime: { [Op.lte]: formattedEndTime },
-      endTime: { [Op.gte]: formattedStartTime },
+      startTime: { [Op.lt]: formattedEndTime },
+      endTime: { [Op.gt]: formattedStartTime },
     },
   });
 
@@ -57,13 +59,15 @@ export const addMeeting = asyncHandler(async (req, res) => {
   const newMeeting = await Meeting.create({
     roomId,
     userId,
-    title,
-    description,
+    subject,
+    notes,
+    agenda,
+    additionalEquipment,
     startTime: formattedStartTime,
     endTime: formattedEndTime,
     meetingDate: date,
     isPrivate: isPrivate || false,
-    attendees: attendees || [],
+    MeetingUser: attendees || [],
   });
 
   // Notifications will be done here
