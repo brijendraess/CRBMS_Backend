@@ -286,7 +286,8 @@ export const deleteRoomGallery = asyncHandler(async (req, res) => {
 });
 
 export const getAllAmenitiesQuantity = asyncHandler(async (req, res) => {
-  const result = await getAllAmenitiesQuantityService();
+  const { roomId } = req.params;
+  const result = await getAllAmenitiesQuantityService(roomId);
   return res
     .status(201)
     .json(
@@ -300,14 +301,19 @@ export const getAllAmenitiesQuantity = asyncHandler(async (req, res) => {
 
 // Get all Amenity quantity
 export const getAllAmenitiesActiveQuantity = asyncHandler(async (req, res) => {
-  const result = await getAllAmenitiesActiveQuantityService();
+  const { roomId } = req.params;
+  const result = await getAllAmenitiesActiveQuantityService(roomId);
   return res
     .status(201)
     .json(new ApiResponse(200, { result }, "Rooms  Retrieved Successfully"));
 });
 
 export const createAmenityQuantity = asyncHandler(async (req, res) => {
- console.log(req.body)
+const {quantity,
+  status,
+  createdBy,
+  roomId,
+  amenityId}=req.body
 
 
   const result = await createAmenityQuantityService(
@@ -349,10 +355,8 @@ export const editAmenityQuantity = asyncHandler(async (req, res) => {
 
 export const deleteAmenityQuantity = asyncHandler(async (req, res) => {
   const { amenityQuantityId } = req.params;
-  const { deletedBy } = req.body;
   const result = await deleteAmenityQuantityService(
-    amenityQuantityId,
-    deletedBy
+    amenityQuantityId
   );
 
   res.status(200).json({
