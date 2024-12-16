@@ -65,7 +65,7 @@ const syncModels = async () => {
     console.error("Error syncing ", abc, " table:", error);
   }
 };
-syncModels();
+//syncModels();
 
 // Sync all tables
 

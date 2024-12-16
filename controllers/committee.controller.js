@@ -349,54 +349,23 @@ export const updateCommitteeMemberRole = asyncHandler(async (req, res) => {
 
 export const getCommitteeByUserId = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  console.log(userId)
 
   if (!userId) {
     throw new ApiError(400, "User ID is required");
   }
 
   // Raw SQL query to fetch committees associated with the user, including members
-  const userCommittees = await sequelize.query(
-    `
-    SELECT 
-      c.id AS "id",
-      c.name AS "name",
-      c.description AS "description",
-      c."createdAt" AS "createdAt",
-      c."updatedAt" AS "updatedAt",
-      c.status AS "status",
-      COUNT(cm.id) AS "memberCount",
-      JSON_AGG(
-        JSON_BUILD_OBJECT(
-          'id', u.id,
-          'fullname', u."fullname",
-          'avatarPath', u."avatarPath",
-          'email', u."email",
-          'role', cm."role",
-          'status', cm."status"
-        )
-      ) AS "members"
-    FROM 
-      "committees" c
-    LEFT JOIN 
-      "committee_members" cm
-    ON 
-      c.id = cm."committeeId"
-    LEFT JOIN 
-      "users" u
-    ON 
-      cm."userId" = u.id
-    WHERE 
-      cm."userId" = :userId
-    GROUP BY 
-      c.id
-    ORDER BY 
-      c."createdAt" DESC
-    `,
-    {
-      type: sequelize.QueryTypes.SELECT,
-      replacements: { userId },
-    }
-  );
+  const userCommittees = await CommitteeMember.findAll({
+    where:{
+      userId:userId
+    },
+    include:[
+      {
+        model:Committee
+      }
+    ]
+  })
 
   // Respond with user committees
   return res
