@@ -6,10 +6,13 @@ import User from "../models/User.models.js";
 import { Op } from "sequelize";
 import { sequelize } from "../database/database.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import MeetingUser from "../models/MeetingUser.js";
+import Location from "../models/Location.model.js";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
     roomId,
+    organizerId,
     subject,
     notes,
     agenda,
@@ -40,15 +43,27 @@ export const addMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Room not found");
   }
 
+  // Checking the available time of the room
+  const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
+  const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
+  let newFormattedStartTime = new Date(startTime); // HH:mm:ss
+  const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
+  newFormattedStartTime.setMinutes(
+    newFormattedStartTime.getMinutes() - extraCalculatedTime
+  );
+  const newFormattedStartTimeChecked = newFormattedStartTime
+    .toTimeString()
+    .split(" ")[0];
+
   // Convert startTime and endTime to TIME format
   const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
   const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
-
   const overlappingMeeting = await Meeting.findOne({
     where: {
       roomId,
+      meetingDate: date,
       startTime: { [Op.lt]: formattedEndTime },
-      endTime: { [Op.gt]: formattedStartTime },
+      endTime: { [Op.gt]: newFormattedStartTimeChecked },
     },
   });
 
@@ -58,6 +73,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
 
   const newMeeting = await Meeting.create({
     roomId,
+    organizerId,
     userId,
     subject,
     notes,
@@ -67,8 +83,14 @@ export const addMeeting = asyncHandler(async (req, res) => {
     endTime: formattedEndTime,
     meetingDate: date,
     isPrivate: isPrivate || false,
-    MeetingUser: attendees || [],
   });
+  const attendeesArray = attendees.map((userId) => ({
+    MeetingId: newMeeting.dataValues.id,
+    UserId: userId,
+  }));
+
+  // Bulk insert into MeetingUser
+  await MeetingUser.bulkCreate(attendeesArray);
 
   // Notifications will be done here
   attendees.forEach((attendee) => {
@@ -187,46 +209,30 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
   }
 
   // Raw SQL query to fetch meetings organized by the user or where the user is an attendee
-  const myMeetings = await sequelize.query(
-    `
-    SELECT 
-      m.id AS "meetingId",
-      m."title",
-      m."description",
-      m."startTime",
-      m."endTime",
-      m."meetingDate",
-      m."isPrivate",
-      m."createdAt",
-      m."updatedAt",
-      r."name" AS "roomName",
-      r."location" AS "roomLocation",
-      u."fullname" AS "organizerName",
-      u."email" AS "organizerEmail"
-    FROM 
-      "meetings" m
-    LEFT JOIN 
-      "rooms" r
-    ON 
-      m."roomId" = r."id"
-    LEFT JOIN 
-      "users" u
-    ON 
-      m."userId" = u."id"
-    WHERE 
-      m."userId" = :userId -- User is the organizer
-      OR EXISTS (
-        SELECT 1 FROM UNNEST(m."attendees") attendee
-        WHERE attendee->>'id' = :userId -- User is an attendee
-      )
-    ORDER BY 
-      m."meetingDate" DESC, m."startTime" ASC
-    `,
-    {
-      type: sequelize.QueryTypes.SELECT,
-      replacements: { userId }, // Bind parameter to prevent SQL injection
-    }
-  );
+  const myMeetings = await Meeting.findAll({
+    where: {
+      [Op.or]: [
+        { organizerId: userId },  // Check if the user is the organizer
+        {
+          '$User.id$': userId  // Check if the user is an attendee
+        }
+      ]
+    },
+    include: [
+      {
+        model: User,
+      },
+
+      {
+        model: Room,
+        include:[
+          {
+            model:Location,
+          }
+        ]
+      },
+    ],
+  });
 
   // Respond with meetings
   return res

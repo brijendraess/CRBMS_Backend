@@ -7,6 +7,7 @@ import router from "./router.js";
 import RoomGallery from "./models/RoomGallery.models.js";
 import Meeting from "./models/Meeting.models.js";
 import Room from "./models/Room.models.js";
+import MeetingUser from "./models/MeetingUser.js";
 
 const app = express();
 
@@ -57,7 +58,7 @@ dbConnection()
 
 const syncModels = async () => {
   try {
-    const abc = Room;
+    const abc = Meeting;
     await abc.sync({ alter: true, force: true });
     console.log(abc, "table synced.");
   } catch (error) {

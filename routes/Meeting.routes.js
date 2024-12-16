@@ -12,6 +12,6 @@ const router = express.Router();
 router.route("/add-meeting").post(verifyJWT, addMeeting);
 router.route("/get-all-meeting").get(verifyJWT, getAllMeetings);
 router.route("/get-all-my-meeting").get(verifyJWT, getMyMeetings);
-router.route("/todays-meetings").get(getTodaysMeetings);
+router.route("/todays-meetings").get(getTodaysMeetings); 
 
 export default router;

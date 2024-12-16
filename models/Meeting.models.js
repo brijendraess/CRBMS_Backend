@@ -2,6 +2,8 @@ import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
 import Room from "./Room.models.js";
 import User from "./User.models.js";
+import MeetingUser from "./MeetingUser.js";
+import Location from "./Location.model.js";
 
 const Meeting = sequelize.define(
   "Meeting",
@@ -13,6 +15,10 @@ const Meeting = sequelize.define(
     },
 
     subject: {
+      type: DataTypes.STRING(200),
+      allowNull: false,
+    },
+    agenda: {
       type: DataTypes.STRING(200),
       allowNull: false,
     },
@@ -64,7 +70,18 @@ Room.hasMany(Meeting, {
 
 Meeting.belongsTo(Room, { foreignKey: 'roomId' });
 
-Meeting.belongsToMany(User, { through: "MeetingUser" });
-User.belongsToMany(Meeting, { through: "MeetingUser" });
+
+User.hasMany(Meeting, {
+  foreignKey: {
+    name: 'organizerId',  // Foreign key in organizerId
+    type: DataTypes.UUID,  // Ensure it's UUID if Room has UUID primary key
+  },
+    onDelete: 'CASCADE' // Optional: What happens when a User is deleted
+  });
+
+Meeting.belongsTo(User, { foreignKey: 'organizerId' });
+
+Meeting.belongsToMany(User, { through: MeetingUser });
+User.belongsToMany(Meeting, { through: MeetingUser });
 
 export default Meeting;
