@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import path from "path";
+import { Op } from "sequelize";
 import fs from "fs";
 import {
   createAmenityQuantityService,
@@ -14,6 +15,9 @@ import {
 } from "../services/Room,service.js";
 import Location from "../models/Location.model.js";
 import RoomGallery from "../models/RoomGallery.models.js";
+import Meeting from "../models/Meeting.models.js";
+import RoomAmenity from "../models/RoomAmenity.model.js";
+import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {
   const {
@@ -75,13 +79,88 @@ export const createRoom = asyncHandler(async (req, res) => {
 });
 
 export const getAllRooms = asyncHandler(async (req, res) => {
+  const {
+    filterDate,
+    filterStartTime,
+    filterEndingTime,
+    filterAmenities,
+    filterCapacity,
+  } = req.query;
+
+  // Checking the available time of the room
+  const sanitationPeriod = 15;
+  const tolerancePeriod = 15;
+  let newFormattedStartTime = filterStartTime
+    ? new Date(filterStartTime)
+    : null; // HH:mm:ss
+  const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
+  filterStartTime &&
+    newFormattedStartTime.setMinutes(
+      newFormattedStartTime.getMinutes() - extraCalculatedTime
+    );
+  const newFormattedStartTimeChecked = newFormattedStartTime
+    ? newFormattedStartTime.toTimeString().split(" ")[0]
+    : null;
+  // Convert startTime and endTime to TIME format
+  const formattedEndTime = filterEndingTime
+    ? new Date(filterEndingTime).toTimeString().split(" ")[0]
+    : null; // HH:mm:ss
+  const whereClause =
+    filterDate && formattedEndTime && newFormattedStartTimeChecked
+      ? {
+          meetingDate: filterDate,
+          ...(formattedEndTime && { startTime: { [Op.lt]: formattedEndTime } }),
+          ...(newFormattedStartTimeChecked && {
+            endTime: { [Op.gt]: newFormattedStartTimeChecked },
+          }),
+        }
+      : 1;
+  const findAvailability =
+    whereClause != 1
+      ? await Meeting.findAll({
+          where: whereClause,
+          attributes: ["roomId"],
+        })
+      : [];
+  const findAvailabilityCal = findAvailability.map(
+    (meeting) => meeting?.dataValues?.roomId
+  );
+
+const amenityIds=filterAmenities?await RoomAmenity.findAll({
+  where: {
+    name: {
+      [Op.in]: filterAmenities,
+    },
+  },
+}):[];
+
+const amenityIdCalculated=amenityIds.map((amenity)=>amenity?.dataValues?.id);
+const filterCapacityCalculated=filterCapacity?filterCapacity:1;
+  // Getting Id
   const rooms = await Room.findAll({
+    where: {
+      id: {
+        [Op.notIn]: findAvailabilityCal,
+      },
+      capacity: {
+        [Op.gte]:filterCapacityCalculated,
+      },
+    },
     include: [
       {
         model: Location,
       },
       {
         model: RoomGallery,
+      },
+      {
+        model: RoomAmenityQuantity,
+        where: amenityIdCalculated.length?{
+          amenityId: {
+            [Op.in]: amenityIdCalculated,
+          },
+          
+        }:1,
       },
     ],
   });
@@ -315,12 +394,7 @@ export const getAllAmenitiesActiveQuantity = asyncHandler(async (req, res) => {
 });
 
 export const createAmenityQuantity = asyncHandler(async (req, res) => {
-const {quantity,
-  status,
-  createdBy,
-  roomId,
-  amenityId}=req.body
-
+  const { quantity, status, createdBy, roomId, amenityId } = req.body;
 
   const result = await createAmenityQuantityService(
     quantity,
@@ -361,9 +435,7 @@ export const editAmenityQuantity = asyncHandler(async (req, res) => {
 
 export const deleteAmenityQuantity = asyncHandler(async (req, res) => {
   const { amenityQuantityId } = req.params;
-  const result = await deleteAmenityQuantityService(
-    amenityQuantityId
-  );
+  const result = await deleteAmenityQuantityService(amenityQuantityId);
 
   res.status(200).json({
     success: true,
