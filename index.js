@@ -4,10 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { dbConnection, sequelize } from "./database/database.js";
 import router from "./router.js";
-import RoomGallery from "./models/RoomGallery.models.js";
-import Meeting from "./models/Meeting.models.js";
-import Room from "./models/Room.models.js";
-import MeetingUser from "./models/MeetingUser.js";
+import RoomFoodBeverage from "./models/RoomFoodBeverage.models.js";
+import RoomAmenityQuantity from "./models/RoomAmenitiesQuantity.models.js";
 
 const app = express();
 
@@ -53,16 +51,16 @@ dbConnection()
     });
   })
   .catch((err) => {
-    console.log("MONGODB CONNECTION FAILED !!!!", err);
+    console.log("DATABASE CONNECTION FAILED !!!!", err);
   });
 
 const syncModels = async () => {
   try {
-    const abc = Meeting;
-    await abc.sync({ alter: true, force: true });
-    console.log(abc, "table synced.");
+    const roomModel = RoomAmenityQuantity;
+    await roomModel.sync({ alter: true, force: true });
+    console.log(roomModel, "table synced.");
   } catch (error) {
-    console.error("Error syncing ", abc, " table:", error);
+    console.error("Error syncing ", roomModel, " table:", error);
   }
 };
 //syncModels();

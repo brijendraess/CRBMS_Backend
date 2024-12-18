@@ -8,11 +8,16 @@ import { Op } from "sequelize";
 import fs from "fs";
 import {
   createAmenityQuantityService,
+  createFoodBeverageService,
   deleteAmenityQuantityService,
+  deleteFoodBeverageService,
   editAmenityQuantityService,
+  editFoodBeverageService,
   getAllAmenitiesActiveQuantityService,
   getAllAmenitiesQuantityService,
-} from "../services/Room,service.js";
+  getAllFoodBeverageActiveService,
+  getAllFoodBeverageService,
+} from "../services/Room.service.js";
 import Location from "../models/Location.model.js";
 import RoomGallery from "../models/RoomGallery.models.js";
 import Meeting from "../models/Meeting.models.js";
@@ -134,9 +139,14 @@ const amenityIds=filterAmenities?await RoomAmenity.findAll({
   },
 }):[];
 
-const amenityIdCalculated=amenityIds.map((amenity)=>amenity?.dataValues?.id);
+const amenityIdCalculated=amenityIds?amenityIds.map((amenity)=>amenity?.dataValues?.id):[];
 const filterCapacityCalculated=filterCapacity?filterCapacity:1;
   // Getting Id
+
+  const whereClauseAmenityQuantity = amenityIdCalculated.length
+  ? { amenityId: { [Op.in]: amenityIdCalculated } }
+  : {}; // Default condition when the array is empty
+
   const rooms = await Room.findAll({
     where: {
       id: {
@@ -155,16 +165,10 @@ const filterCapacityCalculated=filterCapacity?filterCapacity:1;
       },
       {
         model: RoomAmenityQuantity,
-        where: amenityIdCalculated.length?{
-          amenityId: {
-            [Op.in]: amenityIdCalculated,
-          },
-          
-        }:1,
+       // where:whereClauseAmenityQuantity,
       },
     ],
   });
-
   return res
     .status(201)
     .json(new ApiResponse(200, { rooms }, "Rooms  Retrieved Successfully"));
@@ -456,4 +460,77 @@ export const getSingleRoomController = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(201, { roomGallery }, "Room gallery fetch successfully")
     );
+});
+
+export const getAllFoodBeverage = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  const result = await getAllFoodBeverageService(roomId);
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        200,
+        { result },
+        "Rooms food beverage retrieved Successfully"
+      )
+    );
+});
+
+// Get all Amenity quantity
+export const getAllFoodBeverageActive = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  const result = await getAllFoodBeverageActiveService(roomId);
+  return res
+    .status(201)
+    .json(new ApiResponse(200, { result }, "Rooms food beverage  Retrieved Successfully"));
+});
+
+export const createFoodBeverage = asyncHandler(async (req, res) => {
+  const { quantity, status, createdBy, roomId, foodBeverageId } = req.body;
+
+  const result = await createFoodBeverageService(
+    quantity,
+    status,
+    createdBy,
+    roomId,
+    foodBeverageId
+  );
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        { result },
+        "Room food beverage added successfully"
+      )
+    );
+});
+
+export const editFoodBeverage = asyncHandler(async (req, res) => {
+  const { foodBeverageId } = req.params;
+  const { status, updatedBy } = req.body;
+
+  const result = await editFoodBeverageService(
+    status,
+    updatedBy,
+    foodBeverageId
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Room food beverage updated successfully",
+    data: result,
+  });
+});
+
+export const deleteFoodBeverage = asyncHandler(async (req, res) => {
+  const { foodBeverageId } = req.params;
+  const result = await deleteFoodBeverageService(foodBeverageId);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+    message: "Room food beverage deleted successfully",
+  });
 });

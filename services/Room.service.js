@@ -1,6 +1,8 @@
+import FoodBeverage from "../models/FoodBeverage.model.js";
 import Room from "../models/Room.models.js";
 import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
 import RoomAmenity from "../models/RoomAmenity.model.js";
+import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
 import User from "../models/User.models.js";
 import { ApiError } from "../utils/ApiError.js";
 
@@ -141,6 +143,145 @@ export const deleteAmenityQuantityService = async (
     await roomAmenityQuantity.destroy();
 
     return roomAmenityQuantity;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+};
+
+export const getAllFoodBeverageService = async (roomId) => {
+  try {
+    const foodBeverage = await RoomFoodBeverage.findAll({
+      include: [
+        {
+          model: FoodBeverage,
+        },
+        {
+          model: Room,
+        },
+        {
+          model: User,
+        },
+      ],
+      where:{
+        roomId:roomId
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    
+    return foodBeverage;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+};
+
+export const createFoodBeverageService = async (
+  quantity,
+  status,
+  createdBy,
+  roomId,
+  foodBeverageId
+) => {
+  try {
+
+    const roomFoodBeverage = await RoomFoodBeverage.findOne(
+      {
+        where:{
+          roomId:roomId,
+          foodBeverageId:foodBeverageId
+        }
+      }
+    );
+    if (roomFoodBeverage) {
+      throw new ApiError(404, "Room food beverage already present");
+    }
+
+
+    const roomCreateRoomFoodBeverage = await RoomFoodBeverage.create({
+      quantity,
+      status,
+      createdBy,
+      roomId,
+      foodBeverageId,
+    });
+
+    return roomCreateRoomFoodBeverage;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+};
+
+export const getAllFoodBeverageActiveService = async (roomId) => {
+  try {
+    const foodBeverage = await RoomFoodBeverage.findAll({
+      include: [
+        {
+          model: FoodBeverage,
+        },
+        {
+          model: Room,
+        },
+        {
+          model: User,
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+      where: { status: true, roomId:roomId },
+    });
+
+    if (!foodBeverage.length) {
+      throw new ApiError(404, "No food beverage found");
+    }
+    return foodBeverage;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+};
+
+export const editFoodBeverageService = async (
+  status,
+  updatedBy,
+  foodBeverageId
+) => {
+  try {
+    const roomFoodBeverage = await RoomFoodBeverage.findByPk(
+      foodBeverageId
+    );
+
+    if (!roomFoodBeverage) {
+      throw new ApiError(404, "Room food beverage not found");
+    }
+
+    roomFoodBeverage.status = status ?? roomFoodBeverage.status;
+    roomFoodBeverage.updatedBy = updatedBy ?? roomFoodBeverage.updatedBy;
+
+    await roomFoodBeverage.save();
+
+    return roomFoodBeverage;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+};
+
+export const deleteFoodBeverageService = async (
+  foodBeverageId
+) => {
+  try {
+    const roomFoodBeverage = await RoomFoodBeverage.findByPk(
+      foodBeverageId
+    );
+
+    if (!roomFoodBeverage) {
+      throw new ApiError(404, "Room food beverage not found");
+    }
+    await roomFoodBeverage.destroy();
+
+    return roomFoodBeverage;
   } catch (error) {
     console.log("error", error);
     throw error;
