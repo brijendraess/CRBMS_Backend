@@ -4,6 +4,8 @@ import Room from "./Room.models.js";
 import User from "./User.models.js";
 import MeetingUser from "./MeetingUser.js";
 import Location from "./Location.model.js";
+import Committee from "./Committee.models.js";
+import MeetingCommittee from "./MeetingCommittee.js";
 
 const Meeting = sequelize.define(
   "Meeting",
@@ -21,6 +23,10 @@ const Meeting = sequelize.define(
     agenda: {
       type: DataTypes.STRING(200),
       allowNull: false,
+    },
+    guestUser: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     notes: {
       type: DataTypes.TEXT,
@@ -83,5 +89,8 @@ Meeting.belongsTo(User, { foreignKey: 'organizerId' });
 
 Meeting.belongsToMany(User, { through: MeetingUser });
 User.belongsToMany(Meeting, { through: MeetingUser });
+
+Meeting.belongsToMany(Committee, { through: MeetingCommittee });
+Committee.belongsToMany(Meeting, { through: MeetingCommittee });
 
 export default Meeting;
