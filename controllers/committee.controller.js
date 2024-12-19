@@ -289,7 +289,6 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
 // Get committee details
 export const getCommitteeDetails = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
-  console.log("+++++++++++++++++++++++++++++", committeeId);
   const committee = await Committee.findOne({
     where: {
       id: committeeId,
@@ -349,23 +348,34 @@ export const updateCommitteeMemberRole = asyncHandler(async (req, res) => {
 
 export const getCommitteeByUserId = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  console.log(userId)
+  console.log(userId);
 
   if (!userId) {
     throw new ApiError(400, "User ID is required");
   }
 
-  // Raw SQL query to fetch committees associated with the user, including members
-  const userCommittees = await CommitteeMember.findAll({
-    where:{
-      userId:userId
-    },
-    include:[
+  const committees = await Committee.findAll({
+    include: [
       {
-        model:Committee
-      }
-    ]
-  })
+        model: CommitteeMember,
+        include: [
+          {
+            model: User,
+            attributes: [
+              "id",
+              "email",
+              "fullname",
+              "phoneNumber",
+              "avatarPath",
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  // Raw SQL query to fetch committees associated with the user, including members
+  Z;
 
   // Respond with user committees
   return res

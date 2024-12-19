@@ -15,7 +15,7 @@ dotenv.config({
 
 const corsOptions = {
   origin: "http://localhost:5173",
-  methods: ["GET", "POST", "PUT", "DELETE","PATCH"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,
 };
 
@@ -35,6 +35,7 @@ app.use((err, req, res, next) => {
 });
 
 app.use("/avatars", express.static("public/avatars"));
+app.use("/location", express.static("public/location"));
 app.use("/room-images", express.static("public/room-images"));
 app.use("/room-gallery", express.static("public/room-gallery"));
 

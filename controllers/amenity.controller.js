@@ -10,9 +10,6 @@ export const createRoomAmenity = asyncHandler(async (req, res) => {
   if (!name) {
     throw new ApiError(400, "Name Is required");
   }
-
-    // TO-Do check for name to find duplicacy  
-
   const roomAmenity = await RoomAmenity.create({
     name,
     description,
