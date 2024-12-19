@@ -8,6 +8,9 @@ import { sequelize } from "../database/database.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import MeetingUser from "../models/MeetingUser.js";
 import Location from "../models/Location.model.js";
+import MeetingCommittee from "../models/MeetingCommittee.js";
+import CommitteeMember from "../models/CommitteeMember.models.js";
+import Committee from "../models/Committee.models.js";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
@@ -16,12 +19,14 @@ export const addMeeting = asyncHandler(async (req, res) => {
     subject,
     notes,
     agenda,
+    guestUser,
     startTime,
     additionalEquipment,
     endTime,
     date,
     isPrivate,
     attendees,
+    committees,
   } = req.body;
 
   const userId = req.user.id;
@@ -78,6 +83,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
     subject,
     notes,
     agenda,
+    guestUser,
     additionalEquipment,
     startTime: formattedStartTime,
     endTime: formattedEndTime,
@@ -88,17 +94,53 @@ export const addMeeting = asyncHandler(async (req, res) => {
     MeetingId: newMeeting.dataValues.id,
     UserId: userId,
   }));
-
+  const committeesArray = committees.map((committee) => ({
+    MeetingId: newMeeting.dataValues.id,
+    CommitteeId: committee,
+  }));
   // Bulk insert into MeetingUser
   await MeetingUser.bulkCreate(attendeesArray);
 
+  // Bulk insert into MeetingCommittee
+  await MeetingCommittee.bulkCreate(committeesArray);
+
   // Notifications will be done here
-  attendees.forEach((attendee) => {
-    console.log(`Notification sent to ${attendee.email}`);
+  attendees&&attendees.forEach(async(attendee) => {
+    const members = await User.findOne({
+      where: { id: attendee },
+      attributes: ["email", "fullname"],
+    });
+    console.log(`Notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`);
   });
 
+  // Notifications will be done here for all committee user
+  committees&&committees.forEach(async(committee) => {
+    const members = await CommitteeMember.findAll({
+      where: { committeeId: committee },
+      include: [
+        {
+          model: User,
+          attributes: ["email", "fullname", "avatarPath"],
+        },
+        {
+          model: Committee,
+        },
+      ],
+    });
+    members&&members?.map((member)=>{
+      console.log(`Notification sent to committee :${member?.dataValues?.User&&member?.dataValues?.User?.dataValues?.fullname} - ${member?.dataValues?.User&&member?.dataValues?.User?.dataValues?.email}`);
+    })
+    
+  });
+
+    // Notifications will be done here for all quest user
+    guestUser&&guestUser.split(",").forEach((quest) => {
+      console.log(`Notification sent to guestUser : ${quest}`);
+    });
+
   res.status(201).json({
-    message: "Meeting created successfully and notifications sent to attendees",
+    message:
+      "Meeting created successfully and notifications sent to attendees, guest user and committee",
     data: newMeeting,
   });
 });
@@ -212,11 +254,11 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
   const myMeetings = await Meeting.findAll({
     where: {
       [Op.or]: [
-        { organizerId: userId },  // Check if the user is the organizer
+        { organizerId: userId }, // Check if the user is the organizer
         {
-          '$User.id$': userId  // Check if the user is an attendee
-        }
-      ]
+          "$User.id$": userId, // Check if the user is an attendee
+        },
+      ],
     },
     include: [
       {
@@ -225,11 +267,11 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
 
       {
         model: Room,
-        include:[
+        include: [
           {
-            model:Location,
-          }
-        ]
+            model: Location,
+          },
+        ],
       },
     ],
   });

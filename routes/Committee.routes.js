@@ -3,6 +3,7 @@ import {
   addUserToCommittee,
   createCommittee,
   deleteCommittee,
+  getAllActiveCommittees,
   getAllCommittees,
   getCommitteeByUserId,
   getCommitteeDetails,
@@ -33,5 +34,6 @@ router
   .delete(removeUserFromCommittee); // Remove a user from a committee
 
 router.route("/my-committee").get(verifyJWT, getCommitteeByUserId);
+router.route("/active-committee").get(getAllActiveCommittees);
 
 export default router;
