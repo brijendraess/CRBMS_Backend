@@ -23,6 +23,10 @@ import RoomGallery from "../models/RoomGallery.models.js";
 import Meeting from "../models/Meeting.models.js";
 import RoomAmenity from "../models/RoomAmenity.model.js";
 import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
+import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
+import FoodBeverage from "../models/FoodBeverage.model.js";
+import MeetingUser from "../models/MeetingUser.js";
+import User from "../models/User.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {
   const {
@@ -177,8 +181,42 @@ const filterCapacityCalculated=filterCapacity?filterCapacity:1;
 export const getRoomById = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
 
-  const room = await Room.findByPk(roomId, {
+  const room = await Room.findAll( {
+    where:{
+      id:roomId
+    },
     attributes: { exclude: ["password"] },
+    include:[
+      {
+        model:Location
+      },{
+        model:RoomGallery
+      },
+      {
+        model:RoomAmenityQuantity,
+        include:[
+          {
+            model:RoomAmenity
+          }
+        ]
+      },
+      {
+        model:RoomFoodBeverage,
+        include:[
+          {
+            model:FoodBeverage
+          }
+        ]
+      },
+      {
+        model:Meeting,
+        include:[
+          {
+            model:User
+          }
+        ]
+      }
+    ]
   });
 
   if (!room) {
@@ -188,6 +226,31 @@ export const getRoomById = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, { room }, "Room Fetched Successfully"));
+});
+
+export const getAllMeeting = asyncHandler(async (req, res) => {
+  const meeting = await Meeting.findAll( {
+include:[
+  {
+    model:Room,
+    include:[
+      {
+        model:Location
+      }
+    ]
+  },
+  {
+    model:User
+  }
+]
+  });
+  if (!meeting) {
+    throw new ApiError(404, "Room not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { meeting }, "Meeting Fetched Successfully"));
 });
 
 export const updateRoom = asyncHandler(async (req, res) => {

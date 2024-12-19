@@ -349,31 +349,53 @@ export const updateCommitteeMemberRole = asyncHandler(async (req, res) => {
 
 export const getCommitteeByUserId = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  console.log(userId)
 
   if (!userId) {
     throw new ApiError(400, "User ID is required");
   }
 
-  // Raw SQL query to fetch committees associated with the user, including members
+  // Fetch committees associated with the user
   const userCommittees = await CommitteeMember.findAll({
-    where:{
-      userId:userId
-    },
-    include:[
+    where: { userId },
+    include: [
       {
-        model:Committee
-      }
-    ]
-  })
+        model: Committee,
+        attributes: ["id", "name", "description"], // Include relevant committee fields
+      },
+    ],
+  });
 
-  // Respond with user committees
+  if (!userCommittees.length) {
+    return res
+      .status(404)
+      .json(
+        new ApiResponse(404, {}, "No committees found for the user")
+      );
+  }
+
+  // Build the data structure with counts
+  const dataUserCommittees = await Promise.all(
+    userCommittees.map(async (committeeMember) => {
+      const committee = committeeMember.Committee;
+      const memberCount = await CommitteeMember.count({
+        where: { committeeId: committee.id },
+      });
+
+      return {
+        committeeId: committee.id,
+        committeeName: committee.name,
+        description: committee.description,
+        memberCount,
+      };
+    })
+  );
+  // Respond with aggregated data
   return res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        { committees: userCommittees },
+        { committees: dataUserCommittees },
         "Committees with members retrieved successfully for the user"
       )
     );
