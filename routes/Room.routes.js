@@ -21,6 +21,7 @@ import {
   createFoodBeverage,
   deleteFoodBeverage,
   editFoodBeverage,
+  getAllMeeting,
 } from "../controllers/room.controller.js";
 import uploadRoomImage from "../middlewares/roomMulter.middleware.js";
 import multipleGalleryUpload from "../middlewares/galleryRoomMulter.middleware.js";
@@ -36,10 +37,11 @@ roomRouter.route("/food-beverage-all/:roomId").get(getAllFoodBeverage);
 roomRouter.route("/all-food-beverage-active/:roomId").get(getAllFoodBeverageActive);
 roomRouter.route("/add-food-beverage").post(createFoodBeverage);
 roomRouter.route("/delete-food-beverage/:foodBeverageId").delete(deleteFoodBeverage);
-
+roomRouter.route("/all-meeting").get(getAllMeeting);
 roomRouter.route("/add-room").post(uploadRoomImage.single("roomImage"), createRoom);
 roomRouter.route("/all-rooms").get(getAllRooms);
 roomRouter.route("/:roomId").get(getRoomById);
+
 roomRouter.route("/edit-room/:roomId").put(updateRoom);
 roomRouter.route("/:roomId").delete(deleteRoom);
 roomRouter.route("/login").post(roomLogin);
