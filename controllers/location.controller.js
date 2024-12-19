@@ -1,3 +1,4 @@
+import path from "path";
 import Location from "../models/Location.model.js";
 import { getAllActiveLocationService } from "../services/Location.services.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -11,15 +12,29 @@ export const addLocation = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Location name is required");
   }
 
-  // Check for duplicate locationName
   const existingLocation = await Location.findOne({
     where: { locationName: name },
   });
   if (existingLocation) {
     throw new ApiError(400, "Location with this name already exists");
   }
+  let locationImagePath = null;
+  if (req.file) {
+    locationImagePath = `location/${name.replace(/\s+/g, "_")}${path
+      .extname(req.file.originalname)
+      .toLowerCase()}`;
+  }
 
-  const location = await Location.create({ locationName: name, status: true });
+  const location = await Location.create({
+    locationName: name,
+    locationImagePath,
+    status: true,
+  });
+
+  if (!location) {
+    if (req.file) fs.unlinkSync(`public/${locationImagePath}`); // Remove image if room creation fails
+    throw new ApiError(500, "Failed to create Location");
+  }
 
   res
     .status(201)
@@ -48,7 +63,14 @@ export const updateLocation = asyncHandler(async (req, res) => {
 
 export const getAllLocations = asyncHandler(async (req, res) => {
   const locations = await Location.findAll({
-    attributes: ["id", "locationName", "status", "createdAt", "updatedAt"],
+    attributes: [
+      "id",
+      "locationName",
+      "status",
+      "createdAt",
+      "updatedAt",
+      "locationImagePath",
+    ],
     order: [["createdAt", "DESC"]],
   });
 
@@ -65,14 +87,10 @@ export const getAllLocations = asyncHandler(async (req, res) => {
 
 // Get all active location
 export const getAllActiveLocations = asyncHandler(async (req, res) => {
-
   const result = await getAllActiveLocationService();
   return res
-  .status(200)
-  .json(
-    new ApiResponse(200, { result }, "Locations retrieved successfully")
-  );
-  
+    .status(200)
+    .json(new ApiResponse(200, { result }, "Locations retrieved successfully"));
 });
 
 export const changeLocationStatus = asyncHandler(async (req, res) => {

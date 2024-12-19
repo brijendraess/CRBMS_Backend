@@ -289,7 +289,6 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
 // Get committee details
 export const getCommitteeDetails = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
-  console.log("+++++++++++++++++++++++++++++", committeeId);
   const committee = await Committee.findOne({
     where: {
       id: committeeId,

@@ -7,10 +7,13 @@ import {
   getAllLocations,
   updateLocation,
 } from "../controllers/location.controller.js";
+import locationImage from "../middlewares/locationMulter.middleware.js";
 
 const locationRouter = express.Router();
 
-locationRouter.route("/locations").post(addLocation);
+locationRouter
+  .route("/locations")
+  .post(locationImage.single("locationImage"), addLocation);
 locationRouter.route("/locations").get(getAllLocations);
 locationRouter.route("/activeLocations").get(getAllActiveLocations);
 locationRouter.route("/locations/:id").put(updateLocation);
