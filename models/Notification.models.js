@@ -31,7 +31,7 @@ const Notification = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: Meeting, // Assuming you have a Meeting model
+        model: Meeting,
         key: "id",
       },
     },
