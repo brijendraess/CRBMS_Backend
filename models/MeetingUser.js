@@ -10,6 +10,13 @@ const MeetingUser = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
     },
 
+}, {
+  indexes: [
+    {
+      unique: true,
+      fields: ["MeetingId", "UserId"], // Composite unique constraint
+    },
+  ],
 }
 );
 export default MeetingUser;
