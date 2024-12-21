@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
 
-const MeetingUser = sequelize.define(
-  "meeting_user",
+const MeetingCommittee = sequelize.define(
+  "meeting_committee",
   {
     id: {
       type: DataTypes.UUID,
@@ -12,4 +12,4 @@ const MeetingUser = sequelize.define(
 
 }
 );
-export default MeetingUser;
+export default MeetingCommittee;

@@ -169,8 +169,8 @@ export const addUserToCommittee = asyncHandler(async (req, res) => {
 });
 
 export const removeUserFromCommittee = asyncHandler(async (req, res) => {
-  const { committeeId, userId } = req.params;
 
+  const { committeeId, userId } = req.params;
   const committeeMember = await CommitteeMember.findOne({
     where: {
       committeeId,
@@ -278,6 +278,42 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
 export const getAllCommittees = asyncHandler(async (req, res) => {
   // Fetch committees with their member details
   const committees = await Committee.findAll({
+    include: [
+      {
+        model: CommitteeMember,
+        include: [
+          {
+            model: User,
+            attributes: [
+              "id",
+              "email",
+              "fullname",
+              "phoneNumber",
+              "avatarPath",
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { committees },
+        "Committees with members retrieved successfully"
+      )
+    );
+});
+
+export const getAllActiveCommittees = asyncHandler(async (req, res) => {
+  // Fetch committees with their member details
+  const committees = await Committee.findAll({
+    where:{
+      status:true,
+    },
     include: [
       {
         model: CommitteeMember,
