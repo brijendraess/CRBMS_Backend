@@ -110,7 +110,15 @@ export const addMeeting = asyncHandler(async (req, res) => {
     attendees.forEach(async (attendee) => {
       const members = await User.findOne({
         where: { id: attendee },
-        attributes: ["email", "fullname"],
+        attributes: ["id","email", "fullname"],
+      });
+       // Header notification section
+       await Notification.create({
+        type: "Meeting Creation",
+        message: `The meeting "${newMeeting?.dataValues?.subject}" has been created.`,
+        userId: members?.dataValues?.id,
+        isRead:false,
+        meetingId: newMeeting?.id,
       });
       console.log(
         `Notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
@@ -133,7 +141,15 @@ export const addMeeting = asyncHandler(async (req, res) => {
         ],
       });
       members &&
-        members?.map((member) => {
+        members?.map(async(member) => {
+          // Header notification section
+      await Notification.create({
+        type: "Meeting Creation",
+        message: `The meeting "${newMeeting?.dataValues?.subject}" has been created.`,
+        userId: member?.dataValues?.userId,
+        isRead:false,
+        meetingId: newMeeting?.id,
+      });
           console.log(
             `Notification sent to committee :${
               member?.dataValues?.User &&
@@ -441,14 +457,13 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     attendees.forEach(async (attendee) => {
       const members = await User.findOne({
         where: { id: attendee },
-        attributes: ["email", "fullname"],
+        attributes: ["id","email", "fullname"],
       });
-
       // Header notification section
       await Notification.create({
         type: "Meeting Update",
-        message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Update.`,
-        userId: members?.dataValues?.User?.dataValues?.id,
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+        userId: members?.dataValues?.id,
         isRead:false,
         meetingId: meetingId,
       });
@@ -474,12 +489,11 @@ export const updateMeeting = asyncHandler(async (req, res) => {
       });
       members &&
         members?.map(async(member) => {
-
            // Header notification section
       await Notification.create({
         type: "Meeting Update",
-        message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Update.`,
-        userId: member?.dataValues?.User?.dataValues?.id,
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+        userId: member?.dataValues?.userId,
         isRead:false,
         meetingId: meetingId,
       });
@@ -658,14 +672,14 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     attendees.forEach(async (attendee) => {
       const members = await User.findOne({
         where: { id: attendee },
-        attributes: ["email", "fullname"],
+        attributes: ["id","email", "fullname"],
       });
 
       // Header notification section
       await Notification.create({
         type: "Meeting Postpone",
-        message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Cancelled.`,
-        userId: members?.dataValues?.User?.dataValues?.id,
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
+        userId: members?.dataValues?.id,
         isRead:false,
         meetingId: meetingId,
       });
@@ -692,11 +706,11 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
       members &&
         members?.map(async(member) => {
 
-           // Header notification section
+        // Header notification section
       await Notification.create({
         type: "Meeting Postpone",
-        message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Postpone.`,
-        userId: member?.dataValues?.User?.dataValues?.id,
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
+        userId: member?.dataValues?.userId,
         isRead:false,
         meetingId: meetingId,
       });
