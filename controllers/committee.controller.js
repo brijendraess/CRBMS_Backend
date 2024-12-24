@@ -45,7 +45,7 @@ export const createCommittee = asyncHandler(async (req, res) => {
 
 export const updateCommittee = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
-  const { name, description, status } = req.body;
+  const { name, description } = req.body;
 
   const committee = await Committee.findOne({
     where: {
@@ -73,9 +73,33 @@ export const updateCommittee = asyncHandler(async (req, res) => {
 
   committee.name = name || committee.name;
   committee.description = description || committee.description;
-  committee.status = status || committee.status;
+
   //committee.updatedBy = req.user.id;
   committee.updatedAt = new Date();
+
+  await committee.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { committee }, "Committee updated successfully")
+    );
+});
+
+export const changeCommitteeStatus = asyncHandler(async (req, res) => {
+  const { committeeId, status } = req.body;
+  const committee = await Committee.findOne({
+    where: {
+      id: committeeId,
+      deletedAt: null,
+    },
+  });
+
+  if (!committee) {
+    throw new ApiError(404, "Committee not found");
+  }
+
+  committee.status = status !== undefined ? status : committee.status;
 
   await committee.save();
 
@@ -169,7 +193,6 @@ export const addUserToCommittee = asyncHandler(async (req, res) => {
 });
 
 export const removeUserFromCommittee = asyncHandler(async (req, res) => {
-
   const { committeeId, userId } = req.params;
   const committeeMember = await CommitteeMember.findOne({
     where: {
@@ -208,7 +231,7 @@ export const deleteCommittee = asyncHandler(async (req, res) => {
 
   await CommitteeMember.destroy({
     where: {
-      committeeId,
+      id: committeeId,
     },
     force: true,
   });
@@ -226,7 +249,7 @@ export const deleteCommittee = asyncHandler(async (req, res) => {
     );
 });
 
-// Get committee members
+
 export const getCommitteeMembers = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
 
@@ -311,8 +334,8 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
 export const getAllActiveCommittees = asyncHandler(async (req, res) => {
   // Fetch committees with their member details
   const committees = await Committee.findAll({
-    where:{
-      status:true,
+    where: {
+      status: true,
     },
     include: [
       {

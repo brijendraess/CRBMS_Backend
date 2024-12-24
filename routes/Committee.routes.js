@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addUserToCommittee,
+  changeCommitteeStatus,
   createCommittee,
   deleteCommittee,
   getAllActiveCommittees,
@@ -35,5 +36,7 @@ router
 
 router.route("/my-committee").get(verifyJWT, getCommitteeByUserId);
 router.route("/active-committee").get(getAllActiveCommittees);
+
+router.route("/change-status").put(changeCommitteeStatus);
 
 export default router;
