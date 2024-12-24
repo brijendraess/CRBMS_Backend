@@ -10,6 +10,13 @@ const MeetingCommittee = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
     },
 
+}, {
+  indexes: [
+    {
+      unique: true,
+      fields: ["MeetingId", "CommitteeId"], // Composite unique constraint
+    },
+  ],
 }
 );
 export default MeetingCommittee;

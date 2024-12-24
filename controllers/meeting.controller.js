@@ -11,6 +11,7 @@ import Location from "../models/Location.model.js";
 import MeetingCommittee from "../models/MeetingCommittee.js";
 import CommitteeMember from "../models/CommitteeMember.models.js";
 import Committee from "../models/Committee.models.js";
+import Notification from "../models/Notification.models.js";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
@@ -105,36 +106,65 @@ export const addMeeting = asyncHandler(async (req, res) => {
   await MeetingCommittee.bulkCreate(committeesArray);
 
   // Notifications will be done here
-  attendees&&attendees.forEach(async(attendee) => {
-    const members = await User.findOne({
-      where: { id: attendee },
-      attributes: ["email", "fullname"],
+  attendees &&
+    attendees.forEach(async (attendee) => {
+      const members = await User.findOne({
+        where: { id: attendee },
+        attributes: ["id","email", "fullname"],
+      });
+       // Header notification section
+       await Notification.create({
+        type: "Meeting Creation",
+        message: `The meeting "${newMeeting?.dataValues?.subject}" has been created.`,
+        userId: members?.dataValues?.id,
+        isRead:false,
+        meetingId: newMeeting?.id,
+      });
+      console.log(
+        `Notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
+      );
     });
-    console.log(`Notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`);
-  });
 
   // Notifications will be done here for all committee user
-  committees&&committees.forEach(async(committee) => {
-    const members = await CommitteeMember.findAll({
-      where: { committeeId: committee },
-      include: [
-        {
-          model: User,
-          attributes: ["email", "fullname", "avatarPath"],
-        },
-        {
-          model: Committee,
-        },
-      ],
+  committees &&
+    committees.forEach(async (committee) => {
+      const members = await CommitteeMember.findAll({
+        where: { committeeId: committee },
+        include: [
+          {
+            model: User,
+            attributes: ["email", "fullname", "avatarPath"],
+          },
+          {
+            model: Committee,
+          },
+        ],
+      });
+      members &&
+        members?.map(async(member) => {
+          // Header notification section
+      await Notification.create({
+        type: "Meeting Creation",
+        message: `The meeting "${newMeeting?.dataValues?.subject}" has been created.`,
+        userId: member?.dataValues?.userId,
+        isRead:false,
+        meetingId: newMeeting?.id,
+      });
+          console.log(
+            `Notification sent to committee :${
+              member?.dataValues?.User &&
+              member?.dataValues?.User?.dataValues?.fullname
+            } - ${
+              member?.dataValues?.User &&
+              member?.dataValues?.User?.dataValues?.email
+            }`
+          );
+        });
     });
-    members&&members?.map((member)=>{
-      console.log(`Notification sent to committee :${member?.dataValues?.User&&member?.dataValues?.User?.dataValues?.fullname} - ${member?.dataValues?.User&&member?.dataValues?.User?.dataValues?.email}`);
-    })
-    
-  });
 
-    // Notifications will be done here for all quest user
-    guestUser&&guestUser.split(",").forEach((quest) => {
+  // Notifications will be done here for all quest user
+  guestUser &&
+    guestUser.split(",").forEach((quest) => {
       console.log(`Notification sent to guestUser : ${quest}`);
     });
 
@@ -147,37 +177,22 @@ export const addMeeting = asyncHandler(async (req, res) => {
 
 export const getAllMeetings = asyncHandler(async (req, res) => {
   // Raw SQL query to fetch all meetings with associated room and organizer details
-  const meetings = await sequelize.query(
-    `
-    SELECT 
-      m.id AS "meetingId",
-      m."title",
-      m."description",
-      m."startTime",
-      m."endTime",
-      m."meetingDate",
-      m."isPrivate",
-      m."createdAt",
-      m."updatedAt",
-      r."name" AS "roomName",
-      r."location" AS "roomLocation",
-      u."fullname" AS "organizerName",
-      u."email" AS "organizerEmail"
-    FROM 
-      "meetings" m
-    LEFT JOIN 
-      "rooms" r
-    ON 
-      m."roomId" = r."id"
-    LEFT JOIN 
-      "users" u
-    ON 
-      m."userId" = u."id"
-    ORDER BY 
-      m."meetingDate" DESC, m."startTime" ASC
-    `,
-    { type: sequelize.QueryTypes.SELECT }
-  );
+  const meetings = await Meeting.findAll({
+    include: [
+      {
+        model: Room,
+      },
+      {
+        model: User,
+      },
+      {
+        model: MeetingUser,
+      },
+      {
+        model: MeetingCommittee,
+      },
+    ],
+  });
 
   // Send response
   res
@@ -249,7 +264,6 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
   if (!userId) {
     throw new ApiError(400, "User ID is required");
   }
-
   // Raw SQL query to fetch meetings organized by the user or where the user is an attendee
   const myMeetings = await Meeting.findAll({
     where: {
@@ -262,9 +276,17 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
     },
     include: [
       {
-        model: User,
+        model: User, // Many-to-Many relation through MeetingUser
       },
-
+      {
+        model: Committee, // Many-to-Many relation through MeetingCommittee
+      },
+      // {
+      //   model: MeetingUser,
+      // },
+      // {
+      //   model: MeetingCommittee,
+      // },
       {
         model: Room,
         include: [
@@ -275,7 +297,7 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
       },
     ],
   });
-
+  
   // Respond with meetings
   return res
     .status(200)
@@ -288,13 +310,19 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
 export const updateMeeting = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
   const {
-    title,
-    description,
-    startTime,
-    endTime,
     roomId,
-    organizerId,
-    participants,
+      organizerId,
+      subject,
+      agenda,
+      guestUser,
+      startTime,
+      endTime,
+      date,
+      attendees,
+      committees,
+      notes,
+      additionalEquipment,
+      isPrivate,
   } = req.body;
 
   const meeting = await Meeting.findByPk(meetingId);
@@ -302,19 +330,410 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Meeting not found");
   }
 
+  const room = await Room.findByPk(meeting?.roomId);
+  if (!room) {
+    throw new ApiError(404, "Room not found");
+  }
+  
+  // Checking the available time of the room
+  const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
+  const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
+  let newFormattedStartTime = new Date(startTime); // HH:mm:ss
+  const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
+  newFormattedStartTime.setMinutes(
+    newFormattedStartTime.getMinutes() - extraCalculatedTime
+  );
+  const newFormattedStartTimeChecked = newFormattedStartTime
+    .toTimeString()
+    .split(" ")[0];
+
+  // Convert startTime and endTime to TIME format
+  const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  const overlappingMeeting = await Meeting.findOne({
+    where: {
+      roomId,
+      meetingDate: date,
+      startTime: { [Op.lt]: formattedEndTime },
+      endTime: { [Op.gt]: newFormattedStartTimeChecked },
+    },
+  });
+
+  if (overlappingMeeting) {
+    throw new ApiError(400, "Room is already booked for the selected time");
+  }
   // Update fields
-  meeting.title = title || meeting.title;
-  meeting.description = description || meeting.description;
-  meeting.startTime = startTime || meeting.startTime;
-  meeting.endTime = endTime || meeting.endTime;
+  meeting.subject = subject || meeting.subject;
+  meeting.notes = notes || meeting.notes;
+  meeting.startTime = formattedStartTime || meeting.startTime;
+  meeting.endTime = formattedEndTime || meeting.endTime;
   meeting.roomId = roomId || meeting.roomId;
   meeting.organizerId = organizerId || meeting.organizerId;
-  meeting.participants = participants || meeting.participants;
+  meeting.attendees = attendees || meeting.attendees;
+
+  meeting.agenda = agenda || meeting.agenda;
+  meeting.guestUser = guestUser || meeting.guestUser;
+  meeting.date = attendees || meeting.date;
+
+  meeting.committees = committees || meeting.committees;
+  meeting.additionalEquipment = additionalEquipment || meeting.additionalEquipment;
+  meeting.isPrivate = isPrivate || meeting.isPrivate;
 
   await meeting.save();
+
+  const attendeesArray = attendees.map((userId) => ({
+    MeetingId: meetingId,
+    UserId: userId,
+  }));
+  const committeesArray = committees.map((committee) => ({
+    MeetingId: meetingId,
+    CommitteeId: committee,
+  }));
+    // Bulk insert into MeetingUser
+
+  // Step 1: Find current entries for the meeting
+  const currentEntries = await MeetingUser.findAll({
+    where: { MeetingId: meetingId },
+    attributes: ["UserId"],
+  });
+
+  // Step 2: Extract existing UserIds
+  const existingUserIds = currentEntries.map((entry) => entry.UserId);
+
+  // Step 3: Determine UserIds to remove
+  const newUserIds = attendeesArray.map((attendee) => attendee.UserId);
+  const userIdsToRemove = existingUserIds.filter(
+    (userId) => !newUserIds.includes(userId)
+  );
+
+  // Step 4: Remove unneeded entries
+  if (userIdsToRemove.length > 0) {
+    await MeetingUser.destroy({
+      where: {
+        MeetingId: meetingId,
+        UserId: userIdsToRemove,
+      },
+    });
+  }
+
+  // Step 5: Bulk upsert remaining entries
+  await MeetingUser.bulkCreate(attendeesArray, {
+    updateOnDuplicate: ["UserId", "MeetingId"], // Fields to update
+  });
+  
+    // Bulk insert into MeetingCommittee
+   // Step 1: Fetch current entries
+  const currentEntriesCommittee = await MeetingCommittee.findAll({
+    where: { MeetingId: meetingId },
+    attributes: ["CommitteeId"],
+  });
+
+  // Step 2: Extract existing CommitteeIds
+  const existingCommitteeIds = currentEntriesCommittee.map((entry) => entry.CommitteeId);
+
+  // Step 3: Determine CommitteeIds to remove
+  const newCommitteeIds = committeesArray.map((committee) => committee.CommitteeId);
+  const committeeIdsToRemove = existingCommitteeIds.filter(
+    (id) => !newCommitteeIds.includes(id)
+  );
+
+  // Step 4: Remove unneeded entries
+  if (committeeIdsToRemove.length > 0) {
+    await MeetingCommittee.destroy({
+      where: {
+        MeetingId: meetingId,
+        CommitteeId: committeeIdsToRemove,
+      },
+    });
+  }
+
+  // Step 5: Perform bulk upsert
+  await MeetingCommittee.bulkCreate(committeesArray, {
+    updateOnDuplicate: ["CommitteeId", "MeetingId"], // Fields to update on conflict
+  });
+
+  // Notifications will be done here
+  attendees &&
+    attendees.forEach(async (attendee) => {
+      const members = await User.findOne({
+        where: { id: attendee },
+        attributes: ["id","email", "fullname"],
+      });
+      // Header notification section
+      await Notification.create({
+        type: "Meeting Update",
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+        userId: members?.dataValues?.id,
+        isRead:false,
+        meetingId: meetingId,
+      });
+      console.log(
+        `Update meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
+      );
+    });
+
+  // Notifications will be done here for all committee user
+  committees &&
+    committees.forEach(async (committee) => {
+      const members = await CommitteeMember.findAll({
+        where: { committeeId: committee },
+        include: [
+          {
+            model: User,
+            attributes: ["email", "fullname", "avatarPath"],
+          },
+          {
+            model: Committee,
+          },
+        ],
+      });
+      members &&
+        members?.map(async(member) => {
+           // Header notification section
+      await Notification.create({
+        type: "Meeting Update",
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+        userId: member?.dataValues?.userId,
+        isRead:false,
+        meetingId: meetingId,
+      });
+          console.log(
+            `Update meeting notification sent to committee :${
+              member?.dataValues?.User &&
+              member?.dataValues?.User?.dataValues?.fullname
+            } - ${
+              member?.dataValues?.User &&
+              member?.dataValues?.User?.dataValues?.email
+            }`
+          );
+        });
+    });
+
+  // Notifications will be done here for all quest user
+  guestUser &&
+    guestUser.split(",").forEach((quest) => {
+      console.log(`Update meeting notification sent to guestUser : ${quest}`);
+    });
   res
     .status(200)
-    .json({ message: "Meeting updated successfully", data: meeting });
+    .json({ message: "Meeting Update successfully", data: meeting });
+});
+
+// 4. Postpone a meeting
+export const postponeMeeting = asyncHandler(async (req, res) => {
+  const { meetingId } = req.params;
+  const {
+    roomId,
+      organizerId,
+      subject,
+      agenda,
+      guestUser,
+      startTime,
+      endTime,
+      date,
+      attendees,
+      committees,
+      notes,
+      additionalEquipment,
+      isPrivate,
+  } = req.body;
+
+  const meeting = await Meeting.findByPk(meetingId);
+  if (!meeting) {
+    throw new ApiError(404, "Meeting not found");
+  }
+
+  const room = await Room.findByPk(meeting?.roomId);
+  if (!room) {
+    throw new ApiError(404, "Room not found");
+  }
+  
+  // Checking the available time of the room
+  const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
+  const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
+  let newFormattedStartTime = new Date(startTime); // HH:mm:ss
+  const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
+  newFormattedStartTime.setMinutes(
+    newFormattedStartTime.getMinutes() - extraCalculatedTime
+  );
+  const newFormattedStartTimeChecked = newFormattedStartTime
+    .toTimeString()
+    .split(" ")[0];
+
+  // Convert startTime and endTime to TIME format
+  const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  const overlappingMeeting = await Meeting.findOne({
+    where: {
+      roomId,
+      meetingDate: date,
+      startTime: { [Op.lt]: formattedEndTime },
+      endTime: { [Op.gt]: newFormattedStartTimeChecked },
+    },
+  });
+
+  if (overlappingMeeting) {
+    throw new ApiError(400, "Room is already booked for the selected time");
+  }
+  // Update fields
+  meeting.subject = subject || meeting.subject;
+  meeting.notes = notes || meeting.notes;
+  meeting.startTime = formattedStartTime || meeting.startTime;
+  meeting.endTime = formattedEndTime || meeting.endTime;
+  meeting.roomId = roomId || meeting.roomId;
+  meeting.organizerId = organizerId || meeting.organizerId;
+  meeting.attendees = attendees || meeting.attendees;
+
+  meeting.agenda = agenda || meeting.agenda;
+  meeting.guestUser = guestUser || meeting.guestUser;
+  meeting.date = attendees || meeting.date;
+
+  meeting.committees = committees || meeting.committees;
+  meeting.additionalEquipment = additionalEquipment || meeting.additionalEquipment;
+  meeting.isPrivate = isPrivate || meeting.isPrivate;
+
+  await meeting.save();
+
+  const attendeesArray = attendees.map((userId) => ({
+    MeetingId: meetingId,
+    UserId: userId,
+  }));
+  const committeesArray = committees.map((committee) => ({
+    MeetingId: meetingId,
+    CommitteeId: committee,
+  }));
+ 
+  
+      // Bulk insert into MeetingUser
+
+  // Step 1: Find current entries for the meeting
+  const currentEntries = await MeetingUser.findAll({
+    where: { MeetingId: meetingId },
+    attributes: ["UserId"],
+  });
+
+  // Step 2: Extract existing UserIds
+  const existingUserIds = currentEntries.map((entry) => entry.UserId);
+
+  // Step 3: Determine UserIds to remove
+  const newUserIds = attendeesArray.map((attendee) => attendee.UserId);
+  const userIdsToRemove = existingUserIds.filter(
+    (userId) => !newUserIds.includes(userId)
+  );
+
+  // Step 4: Remove unneeded entries
+  if (userIdsToRemove.length > 0) {
+    await MeetingUser.destroy({
+      where: {
+        MeetingId: meetingId,
+        UserId: userIdsToRemove,
+      },
+    });
+  }
+
+  // Step 5: Bulk upsert remaining entries
+  await MeetingUser.bulkCreate(attendeesArray, {
+    updateOnDuplicate: ["UserId", "MeetingId"], // Fields to update
+  });
+  
+    // Bulk insert into MeetingCommittee
+   // Step 1: Fetch current entries
+  const currentEntriesCommittee = await MeetingCommittee.findAll({
+    where: { MeetingId: meetingId },
+    attributes: ["CommitteeId"],
+  });
+
+  // Step 2: Extract existing CommitteeIds
+  const existingCommitteeIds = currentEntriesCommittee.map((entry) => entry.CommitteeId);
+
+  // Step 3: Determine CommitteeIds to remove
+  const newCommitteeIds = committeesArray.map((committee) => committee.CommitteeId);
+  const committeeIdsToRemove = existingCommitteeIds.filter(
+    (id) => !newCommitteeIds.includes(id)
+  );
+
+  // Step 4: Remove unneeded entries
+  if (committeeIdsToRemove.length > 0) {
+    await MeetingCommittee.destroy({
+      where: {
+        MeetingId: meetingId,
+        CommitteeId: committeeIdsToRemove,
+      },
+    });
+  }
+
+  // Step 5: Perform bulk upsert
+  await MeetingCommittee.bulkCreate(committeesArray, {
+    updateOnDuplicate: ["CommitteeId", "MeetingId"], // Fields to update on conflict
+  });
+
+  // Notifications will be done here
+  attendees &&
+    attendees.forEach(async (attendee) => {
+      const members = await User.findOne({
+        where: { id: attendee },
+        attributes: ["id","email", "fullname"],
+      });
+
+      // Header notification section
+      await Notification.create({
+        type: "Meeting Postpone",
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
+        userId: members?.dataValues?.id,
+        isRead:false,
+        meetingId: meetingId,
+      });
+      console.log(
+        `Postpone meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
+      );
+    });
+
+  // Notifications will be done here for all committee user
+  committees &&
+    committees.forEach(async (committee) => {
+      const members = await CommitteeMember.findAll({
+        where: { committeeId: committee },
+        include: [
+          {
+            model: User,
+            attributes: ["email", "fullname", "avatarPath"],
+          },
+          {
+            model: Committee,
+          },
+        ],
+      });
+      members &&
+        members?.map(async(member) => {
+
+        // Header notification section
+      await Notification.create({
+        type: "Meeting Postpone",
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
+        userId: member?.dataValues?.userId,
+        isRead:false,
+        meetingId: meetingId,
+      });
+          console.log(
+            `Postpone meeting notification sent to committee :${
+              member?.dataValues?.User &&
+              member?.dataValues?.User?.dataValues?.fullname
+            } - ${
+              member?.dataValues?.User &&
+              member?.dataValues?.User?.dataValues?.email
+            }`
+          );
+        });
+    });
+
+  // Notifications will be done here for all quest user
+  guestUser &&
+    guestUser.split(",").forEach((quest) => {
+      console.log(`Postpone meeting notification sent to guestUser : ${quest}`);
+    });
+  res
+    .status(200)
+    .json({ message: "Meeting Postpone successfully", data: meeting });
 });
 
 // 5. Delete a meeting
@@ -360,26 +779,158 @@ export const getMeetingsByOrganizer = asyncHandler(async (req, res) => {
 export const cancelMeeting = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
 
-  const meeting = await Meeting.findByPk(meetingId);
+  const meeting = await Meeting.findAll({
+    where:{
+      id:meetingId
+    },
+  });
   if (!meeting) {
     throw new ApiError(404, "Meeting not found");
   }
+  await Meeting.update(
+    { status: "cancelled" }, // values to update
+    {
+      where: { id: meetingId }, // condition
+    }
+  ).then(async()=>{
+  const attendees = await MeetingUser?.findAll({
+    where:{
+      MeetingId:meetingId
+    },
+     });
 
-  const { title, participants } = meeting;
+     const committees = await MeetingCommittee?.findAll({
+      where:{
+        MeetingId:meetingId
+      },
+       });
 
-  // Notify each participant about the meeting cancellation
-  for (const participantId of participants) {
-    await Notification.create({
-      type: "Meeting Canceled",
-      message: `The meeting "${title}" has been canceled.`,
-      userId: participantId,
-      meetingId: meeting.id,
+   // Notifications will be done here
+   attendees &&
+   attendees.forEach(async (attendee) => {
+
+     const members = await User.findOne({
+       where: { id: attendee.dataValues.UserId },
+       attributes: ["email", "fullname"],
+     });
+     // Header notification section
+     await Notification.create({
+      type: "Meeting Postpone",
+      message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Postpone.`,
+      userId: attendee.dataValues.UserId,
+      isRead:false,
+      meetingId: meetingId, 
     });
-  }
 
-  await meeting.destroy();
+     console.log(
+       `cancel meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
+     );
+   });
+
+ // Notifications will be done here for all committee user
+ committees &&
+   committees.forEach(async (committee) => {
+
+     const members = await CommitteeMember?.findAll({
+       where: { committeeId: committee?.dataValues?.CommitteeId },
+       include: [
+         {
+           model: User,
+           attributes: ["email", "fullname", "avatarPath"],
+         },
+       ],
+     });
+     members &&
+       members?.map(async(member) => {
+
+        // Header notification section
+      await Notification.create({
+        type: "Meeting Cancelled",
+        message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Cancelled.`,
+        userId: member?.dataValues?.User?.dataValues?.id,
+        isRead:false,
+        meetingId: meetingId,
+      });
+
+         console.log(
+           `Cancel meeting notification sent to committee :${
+             member?.dataValues?.User &&
+             member?.dataValues?.User?.dataValues?.fullname
+           } - ${
+             member?.dataValues?.User &&
+             member?.dataValues?.User?.dataValues?.email
+           }`
+         );
+       });
+   });
+
+ // Notifications will be done here for all quest user
+ meeting?.dataValues?.guestUser &&
+ meeting?.dataValues?.guestUser.split(",").forEach(async(quest) => {
+
+     console.log(`Cancel meeting notification sent to guestUser : ${quest}`);
+   });
+});
 
   res.status(200).json({
     message: "Meeting canceled and notifications sent to attendees",
   });
+});
+
+export const getMeetingsById = asyncHandler(async (req, res) => {
+  const meetingId = req.params.meetingId;
+
+  if (!meetingId) {
+    throw new ApiError(400, "meeting ID is required");
+  }
+  // Raw SQL query to fetch meetings organized by the user or where the user is an attendee
+  const meetingsOnly = await Meeting.findAll({
+    where: {
+    id:meetingId
+    },
+    include: [
+      {
+        model: User, // Many-to-Many relation through MeetingUser
+      },
+      {
+        model: Committee, // Many-to-Many relation through MeetingCommittee
+      },
+      {
+        model: Room,
+        include: [
+          {
+            model: Location,
+          },
+        ],
+      },
+    ],
+  });
+  const meetingUsers=await MeetingUser.findAll({
+    where:{
+      MeetingId:meetingId
+    },
+    
+  });
+
+  const meetingUser = await Promise.all(
+    meetingUsers?.map(async(data)=>{
+    return await User.findOne({
+      where:{
+        id:data?.UserId
+      },
+      attributes: ["id","fullname"],
+    });
+  }))
+
+const meetings={
+meetingsOnly,
+meetingUser
+}
+
+  // Respond with meetings
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { meetings }, "Meetings  Retrieved Successfully")
+    );
 });

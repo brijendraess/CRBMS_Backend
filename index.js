@@ -6,6 +6,9 @@ import { dbConnection, sequelize } from "./database/database.js";
 import router from "./router.js";
 import RoomFoodBeverage from "./models/RoomFoodBeverage.models.js";
 import RoomAmenityQuantity from "./models/RoomAmenitiesQuantity.models.js";
+import Notification from "./models/Notification.models.js";
+import MeetingUser from "./models/MeetingUser.js";
+import MeetingCommittee from "./models/MeetingCommittee.js";
 
 const app = express();
 
@@ -56,12 +59,13 @@ dbConnection()
   });
 
 const syncModels = async () => {
+  let syncTable;
   try {
-    const roomModel = RoomAmenityQuantity;
-    await roomModel.sync({ alter: true, force: true });
-    console.log(roomModel, "table synced.");
+    const syncTable = MeetingCommittee;
+    await syncTable.sync({ alter: true, force: true });
+    console.log(syncTable, "table synced.");
   } catch (error) {
-    console.error("Error syncing ", roomModel, " table:", error);
+    console.error("Error syncing ", syncTable, " table:", error);
   }
 };
 //syncModels();

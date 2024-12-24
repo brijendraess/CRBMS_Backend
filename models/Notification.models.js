@@ -4,12 +4,12 @@ import User from "./User.models.js";
 import Meeting from "./Meeting.models.js";
 
 const Notification = sequelize.define(
-  "Notification",
+  "notification",
   {
-    notificationId: {
-      type: DataTypes.INTEGER,
+    id: {
+      type: DataTypes.UUID,
       primaryKey: true,
-      autoIncrement: true,
+      defaultValue: DataTypes.UUIDV4,
     },
     type: {
       type: DataTypes.STRING,
@@ -18,22 +18,6 @@ const Notification = sequelize.define(
     message: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: User,
-        key: "id",
-      },
-    },
-    meetingId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: Meeting,
-        key: "id",
-      },
     },
     isRead: {
       type: DataTypes.BOOLEAN,
@@ -44,5 +28,26 @@ const Notification = sequelize.define(
     timestamps: true,
   }
 );
+
+User.hasMany(Notification, {
+  foreignKey: {
+    name: 'userId',  // Foreign key in userId
+    type: DataTypes.UUID,  // Ensure it's UUID if Room has UUID primary key
+  },
+    onDelete: 'CASCADE' // Optional: What happens when a User is deleted
+  });
+
+  Notification.belongsTo(User, { foreignKey: 'userId' }); 
+
+
+Meeting.hasMany(Notification, {
+  foreignKey: {
+    name: 'meetingId',  // Foreign key in meetingId
+    type: DataTypes.UUID,  // Ensure it's UUID if Room has UUID primary key
+  },
+    onDelete: 'CASCADE' // Optional: What happens when a User is deleted
+  });
+
+  Notification.belongsTo(Meeting, { foreignKey: 'meetingId' });
 
 export default Notification;
