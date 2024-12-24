@@ -12,6 +12,9 @@ import MeetingCommittee from "../models/MeetingCommittee.js";
 import CommitteeMember from "../models/CommitteeMember.models.js";
 import Committee from "../models/Committee.models.js";
 import Notification from "../models/Notification.models.js";
+import { roomBookingCancelEmail, roomBookingEmail, roomBookingPostponeEmail, roomBookingUpdateEmail } from "../nodemailer/roomEmail.js";
+import { getRoomByIdService } from "../services/Room.service.js";
+import { getUserByIdService } from "../services/User.service.js";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
@@ -105,21 +108,46 @@ export const addMeeting = asyncHandler(async (req, res) => {
   // Bulk insert into MeetingCommittee
   await MeetingCommittee.bulkCreate(committeesArray);
 
+  // Fetch the data for email
+  const rooms = await getRoomByIdService(roomId);
+  const organizer = await getUserByIdService(organizerId);
+  const emailTemplateValues = {
+    subject: newMeeting?.dataValues?.subject,
+    agenda: newMeeting?.dataValues?.agenda,
+    notes: newMeeting?.dataValues?.notes,
+    roomName: rooms[0]?.dataValues?.name,
+    bookingDate: newMeeting?.dataValues?.meetingDate,
+    startTime: newMeeting?.dataValues?.startTime,
+    endTime: newMeeting?.dataValues?.endTime,
+    location: rooms[0]?.dataValues?.Location?.locationName,
+    organizerName: organizer[0]?.dataValues?.fullname,
+    meetingURL: "#",
+  };
+
   // Notifications will be done here
   attendees &&
     attendees.forEach(async (attendee) => {
       const members = await User.findOne({
         where: { id: attendee },
-        attributes: ["id","email", "fullname"],
+        attributes: ["id", "email", "fullname"],
       });
-       // Header notification section
-       await Notification.create({
+      // Header notification section
+      await Notification.create({
         type: "Meeting Creation",
         message: `The meeting "${newMeeting?.dataValues?.subject}" has been created.`,
         userId: members?.dataValues?.id,
-        isRead:false,
+        isRead: false,
         meetingId: newMeeting?.id,
       });
+
+      // Sending email to all attendees
+      emailTemplateValues = {
+        ...emailTemplateValues,
+        recipientName: members?.dataValues?.fullname,
+      };
+      await roomBookingEmail(members?.dataValues?.email, emailTemplateValues);
+      // End of Email sending section
+
       console.log(
         `Notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
       );
@@ -141,15 +169,27 @@ export const addMeeting = asyncHandler(async (req, res) => {
         ],
       });
       members &&
-        members?.map(async(member) => {
+        members?.map(async (member) => {
           // Header notification section
-      await Notification.create({
-        type: "Meeting Creation",
-        message: `The meeting "${newMeeting?.dataValues?.subject}" has been created.`,
-        userId: member?.dataValues?.userId,
-        isRead:false,
-        meetingId: newMeeting?.id,
-      });
+          await Notification.create({
+            type: "Meeting Creation",
+            message: `The meeting "${newMeeting?.dataValues?.subject}" has been created.`,
+            userId: member?.dataValues?.userId,
+            isRead: false,
+            meetingId: newMeeting?.id,
+          });
+
+          // Sending email to all attendees
+          emailTemplateValues = {
+            ...emailTemplateValues,
+            recipientName: member?.dataValues?.User?.dataValues?.fullname,
+          };
+          await roomBookingEmail(
+            member?.dataValues?.User?.dataValues?.email,
+            emailTemplateValues
+          );
+          // End of Email sending section
+
           console.log(
             `Notification sent to committee :${
               member?.dataValues?.User &&
@@ -164,7 +204,16 @@ export const addMeeting = asyncHandler(async (req, res) => {
 
   // Notifications will be done here for all quest user
   guestUser &&
-    guestUser.split(",").forEach((quest) => {
+    guestUser.split(",").forEach(async (quest) => {
+      // Sending email to all attendees
+      const recipientName = quest.split("@")[0];
+      emailTemplateValues = {
+        ...emailTemplateValues,
+        recipientName: recipientName,
+      };
+      await roomBookingEmail(quest, emailTemplateValues);
+      // End of Email sending section
+
       console.log(`Notification sent to guestUser : ${quest}`);
     });
 
@@ -297,7 +346,7 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
       },
     ],
   });
-  
+
   // Respond with meetings
   return res
     .status(200)
@@ -311,18 +360,18 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
   const {
     roomId,
-      organizerId,
-      subject,
-      agenda,
-      guestUser,
-      startTime,
-      endTime,
-      date,
-      attendees,
-      committees,
-      notes,
-      additionalEquipment,
-      isPrivate,
+    organizerId,
+    subject,
+    agenda,
+    guestUser,
+    startTime,
+    endTime,
+    date,
+    attendees,
+    committees,
+    notes,
+    additionalEquipment,
+    isPrivate,
   } = req.body;
 
   const meeting = await Meeting.findByPk(meetingId);
@@ -334,7 +383,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   if (!room) {
     throw new ApiError(404, "Room not found");
   }
-  
+
   // Checking the available time of the room
   const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
   const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
@@ -376,7 +425,8 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   meeting.date = attendees || meeting.date;
 
   meeting.committees = committees || meeting.committees;
-  meeting.additionalEquipment = additionalEquipment || meeting.additionalEquipment;
+  meeting.additionalEquipment =
+    additionalEquipment || meeting.additionalEquipment;
   meeting.isPrivate = isPrivate || meeting.isPrivate;
 
   await meeting.save();
@@ -389,7 +439,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     MeetingId: meetingId,
     CommitteeId: committee,
   }));
-    // Bulk insert into MeetingUser
+  // Bulk insert into MeetingUser
 
   // Step 1: Find current entries for the meeting
   const currentEntries = await MeetingUser.findAll({
@@ -420,19 +470,23 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   await MeetingUser.bulkCreate(attendeesArray, {
     updateOnDuplicate: ["UserId", "MeetingId"], // Fields to update
   });
-  
-    // Bulk insert into MeetingCommittee
-   // Step 1: Fetch current entries
+
+  // Bulk insert into MeetingCommittee
+  // Step 1: Fetch current entries
   const currentEntriesCommittee = await MeetingCommittee.findAll({
     where: { MeetingId: meetingId },
     attributes: ["CommitteeId"],
   });
 
   // Step 2: Extract existing CommitteeIds
-  const existingCommitteeIds = currentEntriesCommittee.map((entry) => entry.CommitteeId);
+  const existingCommitteeIds = currentEntriesCommittee.map(
+    (entry) => entry.CommitteeId
+  );
 
   // Step 3: Determine CommitteeIds to remove
-  const newCommitteeIds = committeesArray.map((committee) => committee.CommitteeId);
+  const newCommitteeIds = committeesArray.map(
+    (committee) => committee.CommitteeId
+  );
   const committeeIdsToRemove = existingCommitteeIds.filter(
     (id) => !newCommitteeIds.includes(id)
   );
@@ -452,21 +506,48 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     updateOnDuplicate: ["CommitteeId", "MeetingId"], // Fields to update on conflict
   });
 
+
+   // Fetch the data for email
+   const rooms = await getRoomByIdService(roomId);
+   const organizer = await getUserByIdService(organizerId);
+   const emailTemplateValues = {
+     subject: meeting?.subject,
+     agenda: meeting?.agenda,
+     notes: meeting.notes,
+     roomName: rooms[0]?.dataValues?.name,
+     bookingDate: meeting.meetingDate,
+     startTime: meeting?.startTime,
+     endTime: meeting?.endTime,
+     location: rooms[0]?.dataValues?.Location?.locationName,
+     organizerName: organizer[0]?.dataValues?.fullname,
+     meetingURL: "#",
+   };
+ 
+
   // Notifications will be done here
   attendees &&
     attendees.forEach(async (attendee) => {
       const members = await User.findOne({
         where: { id: attendee },
-        attributes: ["id","email", "fullname"],
+        attributes: ["id", "email", "fullname"],
       });
       // Header notification section
       await Notification.create({
         type: "Meeting Update",
         message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
         userId: members?.dataValues?.id,
-        isRead:false,
+        isRead: false,
         meetingId: meetingId,
       });
+
+         // Sending email to all attendees
+         const emailTemplateValuesSet = {
+          ...emailTemplateValues,
+          recipientName: members?.dataValues?.fullname,
+        };
+        await roomBookingUpdateEmail(members?.dataValues?.email, emailTemplateValuesSet);
+        // End of Email sending section
+
       console.log(
         `Update meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
       );
@@ -488,15 +569,27 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         ],
       });
       members &&
-        members?.map(async(member) => {
-           // Header notification section
-      await Notification.create({
-        type: "Meeting Update",
-        message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
-        userId: member?.dataValues?.userId,
-        isRead:false,
-        meetingId: meetingId,
-      });
+        members?.map(async (member) => {
+          // Header notification section
+          await Notification.create({
+            type: "Meeting Update",
+            message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+            userId: member?.dataValues?.userId,
+            isRead: false,
+            meetingId: meetingId,
+          });
+
+           // Sending email to all attendees
+           const emailTemplateValuesSet = {
+            ...emailTemplateValues,
+            recipientName: member?.dataValues?.User?.dataValues?.fullname,
+          };
+          await roomBookingUpdateEmail(
+            member?.dataValues?.User?.dataValues?.email,
+            emailTemplateValuesSet
+          );
+          // End of Email sending section
+
           console.log(
             `Update meeting notification sent to committee :${
               member?.dataValues?.User &&
@@ -511,7 +604,17 @@ export const updateMeeting = asyncHandler(async (req, res) => {
 
   // Notifications will be done here for all quest user
   guestUser &&
-    guestUser.split(",").forEach((quest) => {
+    guestUser.split(",").forEach(async(quest) => {
+
+      // Sending email to all attendees
+      const recipientName = quest.split("@")[0];
+      const emailTemplateValuesSet = {
+        ...emailTemplateValues,
+        recipientName: recipientName,
+      };
+      await roomBookingUpdateEmail(quest, emailTemplateValuesSet);
+      // End of Email sending section
+
       console.log(`Update meeting notification sent to guestUser : ${quest}`);
     });
   res
@@ -524,18 +627,18 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
   const {
     roomId,
-      organizerId,
-      subject,
-      agenda,
-      guestUser,
-      startTime,
-      endTime,
-      date,
-      attendees,
-      committees,
-      notes,
-      additionalEquipment,
-      isPrivate,
+    organizerId,
+    subject,
+    agenda,
+    guestUser,
+    startTime,
+    endTime,
+    date,
+    attendees,
+    committees,
+    notes,
+    additionalEquipment,
+    isPrivate,
   } = req.body;
 
   const meeting = await Meeting.findByPk(meetingId);
@@ -547,7 +650,7 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
   if (!room) {
     throw new ApiError(404, "Room not found");
   }
-  
+
   // Checking the available time of the room
   const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
   const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
@@ -589,7 +692,8 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
   meeting.date = attendees || meeting.date;
 
   meeting.committees = committees || meeting.committees;
-  meeting.additionalEquipment = additionalEquipment || meeting.additionalEquipment;
+  meeting.additionalEquipment =
+    additionalEquipment || meeting.additionalEquipment;
   meeting.isPrivate = isPrivate || meeting.isPrivate;
 
   await meeting.save();
@@ -602,9 +706,8 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     MeetingId: meetingId,
     CommitteeId: committee,
   }));
- 
-  
-      // Bulk insert into MeetingUser
+
+  // Bulk insert into MeetingUser
 
   // Step 1: Find current entries for the meeting
   const currentEntries = await MeetingUser.findAll({
@@ -635,19 +738,23 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
   await MeetingUser.bulkCreate(attendeesArray, {
     updateOnDuplicate: ["UserId", "MeetingId"], // Fields to update
   });
-  
-    // Bulk insert into MeetingCommittee
-   // Step 1: Fetch current entries
+
+  // Bulk insert into MeetingCommittee
+  // Step 1: Fetch current entries
   const currentEntriesCommittee = await MeetingCommittee.findAll({
     where: { MeetingId: meetingId },
     attributes: ["CommitteeId"],
   });
 
   // Step 2: Extract existing CommitteeIds
-  const existingCommitteeIds = currentEntriesCommittee.map((entry) => entry.CommitteeId);
+  const existingCommitteeIds = currentEntriesCommittee.map(
+    (entry) => entry.CommitteeId
+  );
 
   // Step 3: Determine CommitteeIds to remove
-  const newCommitteeIds = committeesArray.map((committee) => committee.CommitteeId);
+  const newCommitteeIds = committeesArray.map(
+    (committee) => committee.CommitteeId
+  );
   const committeeIdsToRemove = existingCommitteeIds.filter(
     (id) => !newCommitteeIds.includes(id)
   );
@@ -667,12 +774,28 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     updateOnDuplicate: ["CommitteeId", "MeetingId"], // Fields to update on conflict
   });
 
+  // Fetch the data for email
+  const rooms = await getRoomByIdService(roomId);
+  const organizer = await getUserByIdService(organizerId);
+  const emailTemplateValues = {
+    subject: meeting?.subject,
+    agenda: meeting?.agenda,
+    notes: meeting.notes,
+    roomName: rooms[0]?.dataValues?.name,
+    bookingDate: meeting.meetingDate,
+    startTime: meeting?.startTime,
+    endTime: meeting?.endTime,
+    location: rooms[0]?.dataValues?.Location?.locationName,
+    organizerName: organizer[0]?.dataValues?.fullname,
+    meetingURL: "#",
+  };
+
   // Notifications will be done here
   attendees &&
     attendees.forEach(async (attendee) => {
       const members = await User.findOne({
         where: { id: attendee },
-        attributes: ["id","email", "fullname"],
+        attributes: ["id", "email", "fullname"],
       });
 
       // Header notification section
@@ -680,9 +803,18 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
         type: "Meeting Postpone",
         message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
         userId: members?.dataValues?.id,
-        isRead:false,
+        isRead: false,
         meetingId: meetingId,
       });
+
+      // Sending email to all attendees
+      const emailTemplateValuesSet = {
+        ...emailTemplateValues,
+        recipientName: members?.dataValues?.fullname,
+      };
+      await roomBookingPostponeEmail(members?.dataValues?.email, emailTemplateValuesSet);
+      // End of Email sending section
+
       console.log(
         `Postpone meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
       );
@@ -704,16 +836,26 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
         ],
       });
       members &&
-        members?.map(async(member) => {
+        members?.map(async (member) => {
+          // Header notification section
+          await Notification.create({
+            type: "Meeting Postpone",
+            message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
+            userId: member?.dataValues?.userId,
+            isRead: false,
+            meetingId: meetingId,
+          });
 
-        // Header notification section
-      await Notification.create({
-        type: "Meeting Postpone",
-        message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
-        userId: member?.dataValues?.userId,
-        isRead:false,
-        meetingId: meetingId,
-      });
+            // Sending email to all attendees
+            const emailTemplateValuesSet = {
+              ...emailTemplateValues,
+              recipientName: member?.dataValues?.User?.dataValues?.fullname,
+            };
+            await roomBookingPostponeEmail(
+              member?.dataValues?.User?.dataValues?.email,
+              emailTemplateValuesSet
+            );
+            // End of Email sending section
           console.log(
             `Postpone meeting notification sent to committee :${
               member?.dataValues?.User &&
@@ -728,7 +870,17 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
 
   // Notifications will be done here for all quest user
   guestUser &&
-    guestUser.split(",").forEach((quest) => {
+    guestUser.split(",").forEach(async(quest) => {
+
+       // Sending email to all attendees
+       const recipientName = quest.split("@")[0];
+       const emailTemplateValuesSet = {
+         ...emailTemplateValues,
+         recipientName: recipientName,
+       };
+       await roomBookingPostponeEmail(quest, emailTemplateValuesSet);
+       // End of Email sending section
+
       console.log(`Postpone meeting notification sent to guestUser : ${quest}`);
     });
   res
@@ -780,8 +932,8 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
 
   const meeting = await Meeting.findAll({
-    where:{
-      id:meetingId
+    where: {
+      id: meetingId,
     },
   });
   if (!meeting) {
@@ -792,85 +944,126 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
     {
       where: { id: meetingId }, // condition
     }
-  ).then(async()=>{
-  const attendees = await MeetingUser?.findAll({
-    where:{
-      MeetingId:meetingId
-    },
-     });
-
-     const committees = await MeetingCommittee?.findAll({
-      where:{
-        MeetingId:meetingId
+  ).then(async () => {
+    const attendees = await MeetingUser?.findAll({
+      where: {
+        MeetingId: meetingId,
       },
-       });
-
-   // Notifications will be done here
-   attendees &&
-   attendees.forEach(async (attendee) => {
-
-     const members = await User.findOne({
-       where: { id: attendee.dataValues.UserId },
-       attributes: ["email", "fullname"],
-     });
-     // Header notification section
-     await Notification.create({
-      type: "Meeting Postpone",
-      message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Postpone.`,
-      userId: attendee.dataValues.UserId,
-      isRead:false,
-      meetingId: meetingId, 
     });
 
-     console.log(
-       `cancel meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
-     );
-   });
+    const committees = await MeetingCommittee?.findAll({
+      where: {
+        MeetingId: meetingId,
+      },
+    });
 
- // Notifications will be done here for all committee user
- committees &&
-   committees.forEach(async (committee) => {
+    // Fetch the data for email
+   const rooms = await getRoomByIdService(meeting[0]?.dataValues?.roomId);
+   const organizer = await getUserByIdService(meeting[0]?.dataValues?.organizerId);
+   const emailTemplateValues = {
+     subject: meeting[0]?.dataValues?.subject,
+     agenda: meeting[0]?.dataValues?.agenda,
+     notes: meeting[0]?.dataValues?.notes,
+     roomName: rooms[0]?.dataValues?.name,
+     bookingDate: meeting[0]?.dataValues?.meetingDate,
+     startTime: meeting[0]?.dataValues?.startTime,
+     endTime: meeting[0]?.dataValues?.endTime,
+     location: rooms[0]?.dataValues?.Location?.locationName,
+     organizerName: organizer[0]?.dataValues?.fullname,
+     meetingURL: "#",
+   };
 
-     const members = await CommitteeMember?.findAll({
-       where: { committeeId: committee?.dataValues?.CommitteeId },
-       include: [
-         {
-           model: User,
-           attributes: ["email", "fullname", "avatarPath"],
-         },
-       ],
-     });
-     members &&
-       members?.map(async(member) => {
-
+    // Notifications will be done here
+    attendees &&
+      attendees.forEach(async (attendee) => {
+        const members = await User.findOne({
+          where: { id: attendee.dataValues.UserId },
+          attributes: ["email", "fullname"],
+        });
         // Header notification section
-      await Notification.create({
-        type: "Meeting Cancelled",
-        message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Cancelled.`,
-        userId: member?.dataValues?.User?.dataValues?.id,
-        isRead:false,
-        meetingId: meetingId,
+        await Notification.create({
+          type: "Meeting Postpone",
+          message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Postpone.`,
+          userId: attendee.dataValues.UserId,
+          isRead: false,
+          meetingId: meetingId,
+        });
+
+         // Sending email to all attendees
+         const emailTemplateValuesSet = {
+          ...emailTemplateValues,
+          recipientName: members?.dataValues?.fullname,
+        };
+        await roomBookingCancelEmail(members?.dataValues?.email, emailTemplateValuesSet);
+        // End of Email sending section
+
+        console.log(
+          `cancel meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
+        );
       });
 
-         console.log(
-           `Cancel meeting notification sent to committee :${
-             member?.dataValues?.User &&
-             member?.dataValues?.User?.dataValues?.fullname
-           } - ${
-             member?.dataValues?.User &&
-             member?.dataValues?.User?.dataValues?.email
-           }`
-         );
-       });
-   });
+    // Notifications will be done here for all committee user
+    committees &&
+      committees.forEach(async (committee) => {
+        const members = await CommitteeMember?.findAll({
+          where: { committeeId: committee?.dataValues?.CommitteeId },
+          include: [
+            {
+              model: User,
+              attributes: ["email", "fullname", "avatarPath"],
+            },
+          ],
+        });
+        members &&
+          members?.map(async (member) => {
+            // Header notification section
+            await Notification.create({
+              type: "Meeting Cancelled",
+              message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Cancelled.`,
+              userId: member?.dataValues?.User?.dataValues?.id,
+              isRead: false,
+              meetingId: meetingId,
+            });
 
- // Notifications will be done here for all quest user
- meeting?.dataValues?.guestUser &&
- meeting?.dataValues?.guestUser.split(",").forEach(async(quest) => {
+            // Sending email to all attendees
+           const emailTemplateValuesSet = {
+            ...emailTemplateValues,
+            recipientName: member?.dataValues?.User?.dataValues?.fullname,
+          };
+          await roomBookingCancelEmail(
+            member?.dataValues?.User?.dataValues?.email,
+            emailTemplateValuesSet
+          );
+          // End of Email sending section
 
-     console.log(`Cancel meeting notification sent to guestUser : ${quest}`);
-   });
-});
+            console.log(
+              `Cancel meeting notification sent to committee :${
+                member?.dataValues?.User &&
+                member?.dataValues?.User?.dataValues?.fullname
+              } - ${
+                member?.dataValues?.User &&
+                member?.dataValues?.User?.dataValues?.email
+              }`
+            );
+          });
+      });
+
+    // Notifications will be done here for all quest user
+    meeting?.dataValues?.guestUser &&
+      meeting?.dataValues?.guestUser.split(",").forEach(async (quest) => {
+
+         // Sending email to all attendees
+      const recipientName = quest.split("@")[0];
+      const emailTemplateValuesSet = {
+        ...emailTemplateValues,
+        recipientName: recipientName,
+      };
+      await roomBookingCancelEmail(quest, emailTemplateValuesSet);
+      // End of Email sending section
+
+        console.log(`Cancel meeting notification sent to guestUser : ${quest}`);
+      });
+  });
 
   res.status(200).json({
     message: "Meeting canceled and notifications sent to attendees",
@@ -886,7 +1079,7 @@ export const getMeetingsById = asyncHandler(async (req, res) => {
   // Raw SQL query to fetch meetings organized by the user or where the user is an attendee
   const meetingsOnly = await Meeting.findAll({
     where: {
-    id:meetingId
+      id: meetingId,
     },
     include: [
       {
@@ -905,27 +1098,27 @@ export const getMeetingsById = asyncHandler(async (req, res) => {
       },
     ],
   });
-  const meetingUsers=await MeetingUser.findAll({
-    where:{
-      MeetingId:meetingId
+  const meetingUsers = await MeetingUser.findAll({
+    where: {
+      MeetingId: meetingId,
     },
-    
   });
 
   const meetingUser = await Promise.all(
-    meetingUsers?.map(async(data)=>{
-    return await User.findOne({
-      where:{
-        id:data?.UserId
-      },
-      attributes: ["id","fullname"],
-    });
-  }))
+    meetingUsers?.map(async (data) => {
+      return await User.findOne({
+        where: {
+          id: data?.UserId,
+        },
+        attributes: ["id", "fullname"],
+      });
+    })
+  );
 
-const meetings={
-meetingsOnly,
-meetingUser
-}
+  const meetings = {
+    meetingsOnly,
+    meetingUser,
+  };
 
   // Respond with meetings
   return res

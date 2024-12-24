@@ -3,7 +3,7 @@ import {
   PASSWORD_RESET_REQUEST_TEMPLATE,
   PASSWORD_RESET_SUCCESS_TEMPLATE,
   VERIFICATION_EMAIL_TEMPLATE,
-} from "./emailTemplate.js";
+} from "../mailTemplate/userEmailTemplate.js";
 import { transporter, sender } from "./nodemailer.config.js";
 
 // Send OTP email

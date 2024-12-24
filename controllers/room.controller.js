@@ -17,6 +17,7 @@ import {
   getAllAmenitiesQuantityService,
   getAllFoodBeverageActiveService,
   getAllFoodBeverageService,
+  getRoomByIdService,
 } from "../services/Room.service.js";
 import Location from "../models/Location.model.js";
 import RoomGallery from "../models/RoomGallery.models.js";
@@ -181,43 +182,8 @@ const filterCapacityCalculated=filterCapacity?filterCapacity:1;
 export const getRoomById = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
 
-  const room = await Room.findAll( {
-    where:{
-      id:roomId
-    },
-    attributes: { exclude: ["password"] },
-    include:[
-      {
-        model:Location
-      },{
-        model:RoomGallery
-      },
-      {
-        model:RoomAmenityQuantity,
-        include:[
-          {
-            model:RoomAmenity
-          }
-        ]
-      },
-      {
-        model:RoomFoodBeverage,
-        include:[
-          {
-            model:FoodBeverage
-          }
-        ]
-      },
-      {
-        model:Meeting,
-        include:[
-          {
-            model:User
-          }
-        ]
-      }
-    ]
-  });
+  const room = await getRoomByIdService(roomId);
+
 
   if (!room) {
     throw new ApiError(404, "Room not found");
