@@ -45,7 +45,7 @@ export const createCommittee = asyncHandler(async (req, res) => {
 
 export const updateCommittee = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
-  const { name, description, status } = req.body;
+  const { name, description } = req.body;
 
   const committee = await Committee.findOne({
     where: {
@@ -73,7 +73,7 @@ export const updateCommittee = asyncHandler(async (req, res) => {
 
   committee.name = name || committee.name;
   committee.description = description || committee.description;
-  committee.status = status || committee.status;
+
   //committee.updatedBy = req.user.id;
   committee.updatedAt = new Date();
 
@@ -86,14 +86,8 @@ export const updateCommittee = asyncHandler(async (req, res) => {
     );
 });
 
-export const addUserToCommittee = asyncHandler(async (req, res) => {
-  const { committeeId } = req.params;
-  const { userId, role } = req.body;
-
-  if (!userId || !role) {
-    throw new ApiError(400, "User ID and role are required");
-  }
-
+export const changeCommitteeStatus = asyncHandler(async (req, res) => {
+  const { committeeId, status } = req.body;
   const committee = await Committee.findOne({
     where: {
       id: committeeId,
@@ -105,43 +99,100 @@ export const addUserToCommittee = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Committee not found");
   }
 
-  const user = await User.findByPk(userId);
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
+  committee.status = status !== undefined ? status : committee.status;
 
-  const existingMember = await CommitteeMember.findOne({
-    where: {
-      committeeId,
-      userId,
-      status: "active",
-    },
-  });
-
-  if (existingMember) {
-    throw new ApiError(400, "User is already a member of this committee");
-  }
-
-  const committeeMember = await CommitteeMember.create({
-    committeeId,
-    userId,
-    role,
-    status: "active",
-  });
+  await committee.save();
 
   return res
-    .status(201)
+    .status(200)
     .json(
-      new ApiResponse(
-        201,
-        { committeeMember },
-        "User added to committee successfully"
-      )
+      new ApiResponse(200, { committee }, "Committee updated successfully")
     );
 });
 
-export const removeUserFromCommittee = asyncHandler(async (req, res) => {
+export const addUserToCommittee = asyncHandler(async (req, res) => {
+  const { committeeId, userIds } = req.body;
 
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    throw new ApiError(400, "User IDs are required and should be an array");
+  }
+
+  // Validate if the committee exists
+  const committee = await Committee.findOne({
+    where: {
+      id: committeeId,
+      deletedAt: null,
+    },
+  });
+
+  if (!committee) {
+    throw new ApiError(404, "Committee not found");
+  }
+
+  // Results and errors arrays
+  const results = [];
+  const errors = [];
+
+  // Iterate over userIds
+  for (const userId of userIds) {
+    try {
+      const user = await User.findByPk(userId);
+
+      if (!user) {
+        errors.push({ userId, message: "User not found" });
+        continue;
+      }
+
+      // Check if the user is already a member of the committee
+      const existingMember = await CommitteeMember.findOne({
+        where: {
+          committeeId,
+          userId,
+        },
+      });
+
+      if (existingMember) {
+        errors.push({
+          userId,
+          message: "User is already a member of this committee",
+        });
+        continue;
+      }
+
+      // Add the user to the committee
+      const committeeMember = await CommitteeMember.create({
+        committeeId,
+        userId,
+        status: false, // Default status
+      });
+
+      results.push(committeeMember);
+    } catch (error) {
+      console.error(`Error processing user ID ${userId}:`, error);
+      errors.push({ userId, message: "An unexpected error occurred" });
+    }
+  }
+
+  console.log("Results:", results);
+
+  // Return response
+  if (results.length > 0) {
+    return res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          addedMembers: results,
+          errors, // Include errors for any failed user additions
+        },
+        "Users processed successfully"
+      )
+    );
+  } else {
+    throw new ApiError(400, "No users were added to the committee");
+  }
+});
+
+export const removeUserFromCommittee = asyncHandler(async (req, res) => {
   const { committeeId, userId } = req.params;
   const committeeMember = await CommitteeMember.findOne({
     where: {
@@ -180,7 +231,7 @@ export const deleteCommittee = asyncHandler(async (req, res) => {
 
   await CommitteeMember.destroy({
     where: {
-      committeeId,
+      id: committeeId,
     },
     force: true,
   });
@@ -198,7 +249,7 @@ export const deleteCommittee = asyncHandler(async (req, res) => {
     );
 });
 
-// Get committee members
+
 export const getCommitteeMembers = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
 
@@ -283,8 +334,8 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
 export const getAllActiveCommittees = asyncHandler(async (req, res) => {
   // Fetch committees with their member details
   const committees = await Committee.findAll({
-    where:{
-      status:true,
+    where: {
+      status: true,
     },
     include: [
       {
@@ -397,9 +448,7 @@ export const getCommitteeByUserId = asyncHandler(async (req, res) => {
   if (!userCommittees.length) {
     return res
       .status(404)
-      .json(
-        new ApiResponse(404, {}, "No committees found for the user")
-      );
+      .json(new ApiResponse(404, {}, "No committees found for the user"));
   }
 
   // Build the data structure with counts

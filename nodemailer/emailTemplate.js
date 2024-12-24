@@ -1,7 +1,6 @@
 
 
 
-
 export const VERIFICATION_EMAIL_TEMPLATE = `
 <!DOCTYPE html>
 <html lang="en">
