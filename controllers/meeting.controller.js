@@ -12,7 +12,7 @@ import MeetingCommittee from "../models/MeetingCommittee.js";
 import CommitteeMember from "../models/CommitteeMember.models.js";
 import Committee from "../models/Committee.models.js";
 import Notification from "../models/Notification.models.js";
-import { roomBookingCancelEmail, roomBookingEmail, roomBookingPostponeEmail, roomBookingUpdateEmail } from "../nodemailer/roomEmail.js";
+import { roomBookingChangeStatusEmail, roomBookingEmail, roomBookingPostponeEmail, roomBookingUpdateEmail } from "../nodemailer/roomEmail.js";
 import { getRoomByIdService } from "../services/Room.service.js";
 import { getUserByIdService } from "../services/User.service.js";
 
@@ -141,11 +141,11 @@ export const addMeeting = asyncHandler(async (req, res) => {
       });
 
       // Sending email to all attendees
-      emailTemplateValues = {
+      const emailTemplateValuesSet = {
         ...emailTemplateValues,
         recipientName: members?.dataValues?.fullname,
       };
-      await roomBookingEmail(members?.dataValues?.email, emailTemplateValues);
+      await roomBookingEmail(members?.dataValues?.email, emailTemplateValuesSet);
       // End of Email sending section
 
       console.log(
@@ -180,13 +180,13 @@ export const addMeeting = asyncHandler(async (req, res) => {
           });
 
           // Sending email to all attendees
-          emailTemplateValues = {
+          const emailTemplateValuesSet = {
             ...emailTemplateValues,
             recipientName: member?.dataValues?.User?.dataValues?.fullname,
           };
           await roomBookingEmail(
             member?.dataValues?.User?.dataValues?.email,
-            emailTemplateValues
+            emailTemplateValuesSet
           );
           // End of Email sending section
 
@@ -207,11 +207,11 @@ export const addMeeting = asyncHandler(async (req, res) => {
     guestUser.split(",").forEach(async (quest) => {
       // Sending email to all attendees
       const recipientName = quest.split("@")[0];
-      emailTemplateValues = {
+      const emailTemplateValuesSet = {
         ...emailTemplateValues,
         recipientName: recipientName,
       };
-      await roomBookingEmail(quest, emailTemplateValues);
+      await roomBookingEmail(quest, emailTemplateValuesSet);
       // End of Email sending section
 
       console.log(`Notification sent to guestUser : ${quest}`);
@@ -240,6 +240,28 @@ export const getAllMeetings = asyncHandler(async (req, res) => {
       {
         model: MeetingCommittee,
       },
+    ],
+  });
+
+  // Send response
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, { meetings }, "Meetings retrieved successfully")
+    );
+});
+
+export const getAllAdminMeetings = asyncHandler(async (req, res) => {
+  // Raw SQL query to fetch all meetings with associated room and organizer details
+  const meetings = await Meeting.findAll({
+    include: [
+      {
+        model: Room,
+      },
+      {
+        model: User,
+      },
+     
     ],
   });
 
@@ -928,8 +950,9 @@ export const getMeetingsByOrganizer = asyncHandler(async (req, res) => {
 });
 
 // Cancel a meeting and notify attendees
-export const cancelMeeting = asyncHandler(async (req, res) => {
+export const changeMeetingStatus = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
+  const { meetingStatus } = req.body;
 
   const meeting = await Meeting.findAll({
     where: {
@@ -940,7 +963,7 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Meeting not found");
   }
   await Meeting.update(
-    { status: "cancelled" }, // values to update
+    { status: meetingStatus }, // values to update
     {
       where: { id: meetingId }, // condition
     }
@@ -982,8 +1005,8 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
         });
         // Header notification section
         await Notification.create({
-          type: "Meeting Postpone",
-          message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Postpone.`,
+          type: `Meeting ${meetingStatus}`,
+          message: `The meeting "${meeting[0]?.dataValues?.subject}" has been ${meetingStatus}.`,
           userId: attendee.dataValues.UserId,
           isRead: false,
           meetingId: meetingId,
@@ -994,11 +1017,11 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
           ...emailTemplateValues,
           recipientName: members?.dataValues?.fullname,
         };
-        await roomBookingCancelEmail(members?.dataValues?.email, emailTemplateValuesSet);
+        await roomBookingChangeStatusEmail(members?.dataValues?.email, emailTemplateValuesSet,meetingStatus);
         // End of Email sending section
 
         console.log(
-          `cancel meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
+          `${meetingStatus} meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
         );
       });
 
@@ -1018,8 +1041,8 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
           members?.map(async (member) => {
             // Header notification section
             await Notification.create({
-              type: "Meeting Cancelled",
-              message: `The meeting "${meeting[0]?.dataValues?.subject}" has been Cancelled.`,
+              type: `Meeting ${meetingStatus}`,
+              message: `The meeting "${meeting[0]?.dataValues?.subject}" has been ${meetingStatus}.`,
               userId: member?.dataValues?.User?.dataValues?.id,
               isRead: false,
               meetingId: meetingId,
@@ -1030,14 +1053,15 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
             ...emailTemplateValues,
             recipientName: member?.dataValues?.User?.dataValues?.fullname,
           };
-          await roomBookingCancelEmail(
+          await roomBookingChangeStatusEmail(
             member?.dataValues?.User?.dataValues?.email,
-            emailTemplateValuesSet
+            emailTemplateValuesSet,
+            meetingStatus
           );
           // End of Email sending section
 
             console.log(
-              `Cancel meeting notification sent to committee :${
+              `${meetingStatus} meeting notification sent to committee :${
                 member?.dataValues?.User &&
                 member?.dataValues?.User?.dataValues?.fullname
               } - ${
@@ -1058,10 +1082,10 @@ export const cancelMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: recipientName,
       };
-      await roomBookingCancelEmail(quest, emailTemplateValuesSet);
+      await roomBookingChangeStatusEmail(quest, emailTemplateValuesSet,meetingStatus);
       // End of Email sending section
 
-        console.log(`Cancel meeting notification sent to guestUser : ${quest}`);
+        console.log(`${meetingStatus} meeting notification sent to guestUser : ${quest}`);
       });
   });
 

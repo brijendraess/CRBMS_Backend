@@ -129,10 +129,10 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All Fields Are Required");
   }
 
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ where: { email} });
 
   if (!user) {
-    throw new ApiError(401, "User Not Found");
+    throw new ApiError(401, "User Not Found or not activated yet");
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
