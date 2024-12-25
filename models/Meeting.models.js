@@ -53,10 +53,10 @@ const Meeting = sequelize.define(
       allowNull: false,
       defaultValue: false, // Public by default
     },
-
+  
     status: {
-      type: DataTypes.ENUM("scheduled", "ongoing", "completed", "cancelled"),
-      defaultValue: "scheduled", // Default to scheduled
+      type: DataTypes.ENUM("pending","scheduled", "ongoing", "completed", "cancelled"),
+      defaultValue: "pending", // Default to scheduled
     },
   },
   {

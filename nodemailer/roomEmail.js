@@ -1,4 +1,4 @@
-import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE } from "../mailTemplate/roomEmailTemplate.js";
+import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE } from "../mailTemplate/roomEmailTemplate.js";
 import { replacePlaceholders } from "../utils/emailResponse.js";
 import { transporter, sender } from "./nodemailer.config.js";
 
@@ -47,17 +47,29 @@ export const roomBookingPostponeEmail = async (email, emailTemplateValues) => {
     }
   };
 
-  export const roomBookingCancelEmail = async (email, emailTemplateValues) => {
+  export const roomBookingChangeStatusEmail = async (email, emailTemplateValues,meetingStatus) => {
+    let templateName='';
+    if(meetingStatus==='pending'){
+      templateName=ROOM_BOOKING_PENDING_REQUEST_TEMPLATE;
+    }else if(meetingStatus==='scheduled'){
+      templateName=ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE;
+    }else if(meetingStatus==='ongoing'){
+      templateName=ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE;
+    }else if(meetingStatus==='completed'){
+      templateName=ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE;
+    }else if(meetingStatus==='cancelled'){
+      templateName=ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE;
+    }
     try {
       await transporter.sendMail({
         from: `"${sender.name}" <${sender.email}>`,
         to: email,
-        subject: "Room Cancel Confirmation",
-        html:replacePlaceholders(ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE,emailTemplateValues),
+        subject: `Room ${meetingStatus} Confirmation`,
+        html:replacePlaceholders(templateName,emailTemplateValues),
       });
-      console.log("Room Cancel Confirmation");
+      console.log(`Room ${meetingStatus} Confirmation`);
     } catch (error) {
-      console.error("Error sending room booking cancel confirmation email:", error);
-      throw new Error(`Error sending room booking cancel confirmation email: ${error}`);
+      console.error(`Error sending room booking ${meetingStatus} confirmation email:`, error);
+      throw new Error(`Error sending room booking ${meetingStatus} confirmation email: ${error}`);
     }
   };
