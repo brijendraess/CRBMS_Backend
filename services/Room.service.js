@@ -1,8 +1,11 @@
 import FoodBeverage from "../models/FoodBeverage.model.js";
+import Location from "../models/Location.model.js";
+import Meeting from "../models/Meeting.models.js";
 import Room from "../models/Room.models.js";
 import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
 import RoomAmenity from "../models/RoomAmenity.model.js";
 import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
+import RoomGallery from "../models/RoomGallery.models.js";
 import User from "../models/User.models.js";
 import { ApiError } from "../utils/ApiError.js";
 
@@ -285,5 +288,53 @@ export const deleteFoodBeverageService = async (
   } catch (error) {
     console.log("error", error);
     throw error;
-  }
+  } 
+};
+export const getRoomByIdService = async (
+  roomId
+) => {
+  try {
+    const room = await Room.findAll( {
+      where:{
+        id:roomId
+      },
+      attributes: { exclude: ["password"] },
+      include:[
+        {
+          model:Location
+        },{
+          model:RoomGallery
+        },
+        {
+          model:RoomAmenityQuantity,
+          include:[
+            {
+              model:RoomAmenity
+            }
+          ]
+        },
+        {
+          model:RoomFoodBeverage,
+          include:[
+            {
+              model:FoodBeverage
+            }
+          ]
+        },
+        {
+          model:Meeting,
+          include:[
+            {
+              model:User
+            }
+          ]
+        }
+      ]
+    });
+
+    return room;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  } 
 };

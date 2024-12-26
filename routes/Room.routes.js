@@ -42,7 +42,7 @@ roomRouter.route("/add-room").post(uploadRoomImage.single("roomImage"), createRo
 roomRouter.route("/all-rooms").get(getAllRooms);
 roomRouter.route("/:roomId").get(getRoomById);
 
-roomRouter.route("/edit-room/:roomId").put(updateRoom);
+roomRouter.route("/edit-room/:roomId").put(uploadRoomImage.single("roomImage"),updateRoom);
 roomRouter.route("/:roomId").delete(deleteRoom);
 roomRouter.route("/login").post(roomLogin);
 roomRouter.route("/change-sanitation-status").post(changeSanitationStatus);

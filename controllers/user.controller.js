@@ -39,7 +39,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // Validation for required fields
   if (
-    [email, password, fullname, phoneNumber].some(
+    [email, password, fullname, phoneNumber,role].some(
       (field) => !field || field.trim() === ""
     )
   ) {
@@ -81,6 +81,7 @@ const registerUser = asyncHandler(async (req, res) => {
       password: hashedPassword,
       fullname,
       phoneNumber,
+      isAdmin:role,
       avatarPath,
       role,
     });
@@ -130,10 +131,10 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All Fields Are Required");
   }
 
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ where: { email} });
 
   if (!user) {
-    throw new ApiError(401, "User Not Found");
+    throw new ApiError(401, "User Not Found or not activated yet");
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -257,6 +258,7 @@ const getUserById = asyncHandler(async (req, res) => {
       u.email AS "email",
       u."phoneNumber" AS "phoneNumber",
       u."avatarPath",
+      u."isAdmin",
       c.name AS "committeename"
     FROM 
       users u
@@ -286,6 +288,7 @@ const getUserById = asyncHandler(async (req, res) => {
       id: result[0].userId,
       fullname: result[0].fullname,
       email: result[0].email,
+      isAdmin: result[0].isAdmin,
       phoneNumber: result[0].phoneNumber,
       avatarPath: result[0].avatarPath,
       committees: result
@@ -368,15 +371,16 @@ const updateMyProfile = asyncHandler(async (req, res) => {
 });
 
 // Update User (Admin)
-const updateUserProfile = asyncHandler(async (req, res) => {
+const updateUserProfile = asyncHandler(async (req, res) => { 
   const { id } = req.params;
-  const { fullname, email, phoneNumber, committees } = req.body;
-
+  const { fullname, email, phoneNumber, isAdmin, committees } = req.body;
   const loggedInUser = await User.findByPk(req.user.id);
 
   if (!loggedInUser) {
     throw new ApiError(400, "Please log in");
   }
+
+    let avatarPath = null;
 
   const user = await User.findByPk(id);
 
@@ -395,9 +399,26 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   user.fullname = fullname || user.fullname;
   user.email = email || user.email;
   user.phoneNumber = phoneNumber || user.phoneNumber;
-  user.role = role || user.role;
+  user.isAdmin = isAdmin || user.isAdmin;
 
   await user.save();
+
+    if (!user) {
+      if (req.file) fs.unlinkSync(`public/${avatarPath}`); // Remove image if room creation fails
+      throw new ApiError(500, "Failed to profile image");
+    }
+    
+    if (req.file) {
+      const avatarPath = req.file ? `avatars/${req.file.filename}` : null;
+      const newAvatarPath = `avatars/${fullname.replace(/\s+/g, "_")}_${user.id}${path.extname(req.file.originalname).toLowerCase()}`;
+      try {
+        fs.renameSync(`public/${avatarPath}`, `public/${newAvatarPath}`);
+      } catch (error) {
+        console.error("Error renaming file:", error.message);
+      }
+      user.avatarPath = newAvatarPath;
+      await user.save();
+    }
 
   // Synchronize committees in the `committee_members` table
   const existingCommitteeIds = (
@@ -407,7 +428,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     })
   ).map((cm) => cm.committeeId);
 
-  const newCommitteeIds = committees;
+  const newCommitteeIds = committees?.split(",");
 
   // Find committees to add and remove
   const committeesToAdd = newCommitteeIds.filter(

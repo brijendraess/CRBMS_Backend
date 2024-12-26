@@ -9,15 +9,29 @@ import RoomAmenityQuantity from "./models/RoomAmenitiesQuantity.models.js";
 import Notification from "./models/Notification.models.js";
 import MeetingUser from "./models/MeetingUser.js";
 import MeetingCommittee from "./models/MeetingCommittee.js";
+import Meeting from "./models/Meeting.models.js";
 
 const app = express();
 
 dotenv.config({
   path: "env",
 });
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://192.168.50.95:5173",
+  "http://192.168.50.95:9000",
+];
 
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: function (origin, callback) {
+    if (allowedOrigins.includes(origin) || !origin) {
+      // Allow requests with a matching origin or requests without origin (e.g., curl, Postman)
+      callback(null, true);
+    } else {
+      // Reject the request if the origin is not allowed
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,
 };
@@ -61,7 +75,7 @@ dbConnection()
 const syncModels = async () => {
   let syncTable;
   try {
-    const syncTable = MeetingCommittee;
+    const syncTable = Meeting;
     await syncTable.sync({ alter: true, force: true });
     console.log(syncTable, "table synced.");
   } catch (error) {

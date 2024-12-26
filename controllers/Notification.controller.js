@@ -6,6 +6,7 @@ import User from "../models/User.models.js";
 import Meeting from "../models/Meeting.models.js";
 import Location from "../models/Location.model.js";
 import Room from "../models/Room.models.js";
+import { createEventMicrosoftCalendar, getAccessTokenMicrosoftCalendar, requestAccessTokenMicrosoftOutlook } from "./outlook.controller.js";
 
 export const limitedNotificationController = asyncHandler(async (req, res) => {
 
@@ -55,6 +56,19 @@ export const limitedNotificationController = asyncHandler(async (req, res) => {
 export const allNotificationController = asyncHandler(async (req, res) => {
 
   const userId=req.user.id
+
+  const token =
+  req.cookies?.accessToken ||
+  req.header("Authorization")?.replace("Bearer ", "");
+ // console.log(token)
+
+ // const requestAccess=requestAccessTokenMicrosoftOutlook(token)
+ // console.log(requestAccess)
+
+//const accessTokenMicrosoft=getAccessTokenMicrosoftCalendar(token);
+//const createEvent=createEventMicrosoftCalendar(accessTokenMicrosoft)
+//console.log(createEvent)
+  //console.log(accessTokenMicrosoft)
 
   const notification = await Notification.findAll({
     where:{
@@ -154,3 +168,4 @@ export const changeReadNotificationController = asyncHandler(async (req, res) =>
       .status(200)
       .json(new ApiResponse(200, null, "Location deleted successfully"));
   });
+
