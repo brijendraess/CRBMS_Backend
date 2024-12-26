@@ -24,9 +24,6 @@ import RoomGallery from "../models/RoomGallery.models.js";
 import Meeting from "../models/Meeting.models.js";
 import RoomAmenity from "../models/RoomAmenity.model.js";
 import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
-import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
-import FoodBeverage from "../models/FoodBeverage.model.js";
-import MeetingUser from "../models/MeetingUser.js";
 import User from "../models/User.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {

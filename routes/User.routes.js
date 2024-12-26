@@ -24,28 +24,28 @@ import upload from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-router.route("/check-auth").get(verifyJWT, checkAuth); //DONE
+router.route("/check-auth").get(verifyJWT, checkAuth); 
 
 // POST Register /api/v1/auth
-router.route("/register").post(upload.single("avatar"), registerUser); //DONE
+router.route("/register").post(upload.single("avatar"), registerUser); 
 
 // Authentication
-router.route("/login").post(loginUser); //DONE
+router.route("/login").post(loginUser); 
 
 // VerifyOTP
-router.route("/verify-otp").post(verifyOTPForLogin); //DONE
+router.route("/verify-otp").post(verifyOTPForLogin); 
 
 // Logout
-router.route("/logout").post(logoutUser); //DONE
+router.route("/logout").post(logoutUser); 
 
 // Resend OTP
-router.route("/resend-otp").post(sendOTPAgain); //DONE
+router.route("/resend-otp").post(sendOTPAgain); 
 
 // Get MyProfile
-router.route("/my-profile").get(verifyJWT, getMyProfile); //DONE
+router.route("/my-profile").get(verifyJWT, getMyProfile); 
 
 // get all users
-router.route("/users").get(verifyJWT, getAllUsers); //DONE
+router.route("/users").get(verifyJWT, getAllUsers); 
 
 // Update my profile
 router.route("/update-my-profile").put(verifyJWT, updateMyProfile);
@@ -54,7 +54,7 @@ router.route("/update-my-profile").put(verifyJWT, updateMyProfile);
 router.route("/:id").get(verifyJWT, getUserById);
 
 // Update User Profile
-router.route("/update-profile/:id").put(verifyJWT, updateUserProfile);
+router.route("/update-profile/:id").put(verifyJWT,upload.single("profileImage"),  updateUserProfile);
 
 // Change Password by user manually
 router.route("/update-password").put(verifyJWT, updatePassword);
@@ -65,10 +65,10 @@ router
   .put(verifyJWT, upload.single("avatar"), changeProfilePic);
 
 // Forgot Password
-router.route("/forgot-password").post(forgetPassword); //DONE
+router.route("/forgot-password").post(forgetPassword); 
 
 // reset-password
-router.route("/reset-password/:token").post(resetPassword); //DONE
+router.route("/reset-password/:token").post(resetPassword); 
 
 router.route("/block-status").post(updateBlockStatus);
 
