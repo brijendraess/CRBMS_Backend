@@ -16,7 +16,9 @@ locationRouter
   .post(locationImage.single("locationImage"), addLocation);
 locationRouter.route("/locations").get(getAllLocations);
 locationRouter.route("/activeLocations").get(getAllActiveLocations);
-locationRouter.route("/locations/:id").put(updateLocation);
+locationRouter
+  .route("/locations/:id")
+  .put(locationImage.single("locationImage"), updateLocation);
 locationRouter.route("/locations/:id/status").patch(changeLocationStatus);
 locationRouter.route("/locations/delete/:id").delete(deleteLocation);
 

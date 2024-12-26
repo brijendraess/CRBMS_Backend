@@ -45,6 +45,7 @@ jspm_packages/
 public/room-images
 public/room-gallery
 public/avatars
+public/location
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/

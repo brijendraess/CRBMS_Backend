@@ -5,12 +5,9 @@ import amenityRoutes from "./routes/RoomAmenity.routes.js";
 import committeeRoutes from "./routes/Committee.routes.js";
 import meetingRoutes from "./routes/Meeting.routes.js";
 import locationRouter from "./routes/Location.routes.js";
-import roomRouter from "./routes/Room.routes.js";
 import foodBeverageRouter from "./routes/FoodBeverages.routes.js";
 import reportRouter from "./routes/Report.routes.js";
-import locationRouter from './routes/Location.routes.js';
 import roomRouter from './routes/Room.routes.js';
-import foodBeverageRouter from './routes/FoodBeverages.routes.js';
 import notificationRouter from './routes/Notification.routes.js';
 
 const router = Router();

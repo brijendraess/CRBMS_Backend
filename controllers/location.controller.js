@@ -44,7 +44,6 @@ export const addLocation = asyncHandler(async (req, res) => {
 export const updateLocation = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
-  console.log(id, name);
 
   const location = await Location.findByPk(id);
 
@@ -52,7 +51,15 @@ export const updateLocation = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Location not found");
   }
 
+  let locationImagePath = null;
+  if (req.file) {
+    locationImagePath = `location/${name.replace(/\s+/g, "_")}${path
+      .extname(req.file.originalname)
+      .toLowerCase()}`;
+  }
+
   location.locationName = name || location.locationName;
+  location.locationImagePath = locationImagePath || location.locationImagePath;
 
   await location.save();
 

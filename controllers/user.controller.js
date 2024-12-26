@@ -46,10 +46,10 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
   // Ensure committee is parsed if it's sent as a string
-  let parsedCommittee=[];
+  let parsedCommittee = [];
   try {
-    parsedCommittee = Array.isArray(committee)? committee
-      
+    parsedCommittee = Array.isArray(committee)
+      ? committee
       : JSON.parse(committee);
   } catch (error) {
     throw new ApiError(
@@ -82,10 +82,11 @@ const registerUser = asyncHandler(async (req, res) => {
       fullname,
       phoneNumber,
       avatarPath,
+      role,
     });
 
     // Add the user to committees if provided
-    
+
     if (parsedCommittee.length > 0) {
       const committeeEntries = parsedCommittee.map((committeeId) => ({
         committeeId,
@@ -93,7 +94,7 @@ const registerUser = asyncHandler(async (req, res) => {
         status: true,
       }));
       await CommitteeMember.sync(); // Ensure table exists
-      await CommitteeMember.bulkCreate(committeeEntries,{validate:true});
+      await CommitteeMember.bulkCreate(committeeEntries, { validate: true });
     }
 
     const createdUser = await User.findByPk(newUser.id, {
@@ -153,7 +154,7 @@ const loginUser = asyncHandler(async (req, res) => {
   await user.save();
 
   await sendOTP(user.email, OTP);
-console.log("OTP : ",OTP)
+  console.log("OTP : ", OTP);
   return res
     .status(201)
     .json(
@@ -317,9 +318,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
   const users = await User.findAndCountAll({
     attributes: { exclude: ["password", "refreshToken"] },
-    order: [
-      ['createdAt', 'DESC'],
-    ],
+    order: [["createdAt", "DESC"]],
     limit: parseInt(limit),
     offset: parseInt(offset),
     paranoid: false,
@@ -396,6 +395,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   user.fullname = fullname || user.fullname;
   user.email = email || user.email;
   user.phoneNumber = phoneNumber || user.phoneNumber;
+  user.role = role || user.role;
 
   await user.save();
 
@@ -422,7 +422,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     const committeeRecordsToAdd = committeesToAdd.map((committeeId) => ({
       userId: id,
       committeeId,
-      role: "User",
+      role: role,
     }));
     await CommitteeMember.bulkCreate(committeeRecordsToAdd);
   }
@@ -433,7 +433,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       where: {
         userId: id,
         committeeId: committeesToRemove,
-        role: "User",
+        role: role,
       },
     });
   }
