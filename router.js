@@ -9,7 +9,6 @@ import foodBeverageRouter from "./routes/FoodBeverages.routes.js";
 import reportRouter from "./routes/Report.routes.js";
 import roomRouter from './routes/Room.routes.js';
 import notificationRouter from './routes/Notification.routes.js';
-import outlookRouter from './routes/outlook.routes.js';
 
 const router = Router();
 
@@ -22,6 +21,5 @@ router.use("/api/v1/location", locationRouter);
 router.use("/api/v1/food-beverages", foodBeverageRouter);
 router.use("/api/v1/report", reportRouter);
 router.use("/api/v1/notification", notificationRouter);
-router.use("/api/v1/outlook", outlookRouter);
 
 export default router;
