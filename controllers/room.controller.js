@@ -24,9 +24,6 @@ import RoomGallery from "../models/RoomGallery.models.js";
 import Meeting from "../models/Meeting.models.js";
 import RoomAmenity from "../models/RoomAmenity.model.js";
 import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
-import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
-import FoodBeverage from "../models/FoodBeverage.model.js";
-import MeetingUser from "../models/MeetingUser.js";
 import User from "../models/User.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {
@@ -225,18 +222,24 @@ export const updateRoom = asyncHandler(async (req, res) => {
     name,
     location,
     capacity,
-    roomImagePath,
     sanitationStatus,
     tolerancePeriod,
     sanitationPeriod,
     isAvailable,
-    amenities,
+    description,
   } = req.body;
 
   const room = await Room.findByPk(roomId);
   if (!room) {
     throw new ApiError(404, "Room not found");
   }
+  let roomImagePath = null;
+  if (req.file) {
+    roomImagePath = `room-images/${name.replace(/\s+/g, "_")}${path
+      .extname(req.file.originalname)
+      .toLowerCase()}`;
+  }
+
   room.name = name ?? room.name;
   room.location = location ?? room.location.id;
   room.capacity = capacity ?? room.capacity;
@@ -245,8 +248,23 @@ export const updateRoom = asyncHandler(async (req, res) => {
   room.tolerancePeriod = tolerancePeriod ?? room.tolerancePeriod;
   room.sanitationPeriod = sanitationPeriod ?? room.sanitationPeriod;
   room.isAvailable = isAvailable ?? room.isAvailable;
+  room.description = description ?? room.description;
 
   await room.save();
+
+  if (!room) {
+    if (req.file) fs.unlinkSync(`public/${roomImagePath}`); // Remove image if room creation fails
+    throw new ApiError(500, "Failed to create room");
+  }
+  if (req.file) {
+    const newRoomImagePath = `room-images/${name.replace(/\s+/g, "_")}_${
+      room.id
+    }${path.extname(req.file.originalname).toLowerCase()}`;
+    fs.renameSync(`public/${roomImagePath}`, `public/${newRoomImagePath}`);
+    room.roomImagePath = newRoomImagePath;
+    await room.save();
+  }
+
 
   res.status(200).json({
     success: true,

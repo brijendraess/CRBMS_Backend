@@ -15,7 +15,6 @@ export const getAllActiveLocationService = async () => {
       order: [["createdAt", "DESC"]],
       where: { status: true },
     });
-    console.log(locations);
     if (!locations.length) {
       throw new ApiError(404, "No locations found");
     }

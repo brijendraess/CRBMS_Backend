@@ -44,7 +44,6 @@ export const addLocation = asyncHandler(async (req, res) => {
 export const updateLocation = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
-  console.log(id, name);
 
   const location = await Location.findByPk(id);
 

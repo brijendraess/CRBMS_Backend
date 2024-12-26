@@ -29,7 +29,6 @@ export const addFoodBeverage = asyncHandler(async (req, res) => {
 export const updateFoodBeverage = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
-  console.log(id, name);
 
   const foodBeverage = await FoodBeverage.findByPk(id);
 
@@ -63,7 +62,6 @@ export const getAllFoodBeverages = asyncHandler(async (req, res) => {
 export const getAllActiveFoodBeverages = asyncHandler(async (req, res) => {
 
   const result = await getAllActiveFoodBeverageService();
-  console.log(result)
   return res
   .status(200)
   .json(
