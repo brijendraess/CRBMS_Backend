@@ -173,8 +173,6 @@ export const addUserToCommittee = asyncHandler(async (req, res) => {
     }
   }
 
-  console.log("Results:", results);
-
   // Return response
   if (results.length > 0) {
     return res.status(201).json(

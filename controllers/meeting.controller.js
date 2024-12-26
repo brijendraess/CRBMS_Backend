@@ -147,10 +147,6 @@ export const addMeeting = asyncHandler(async (req, res) => {
       };
       await roomBookingEmail(members?.dataValues?.email, emailTemplateValuesSet);
       // End of Email sending section
-
-      console.log(
-        `Notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
-      );
     });
 
   // Notifications will be done here for all committee user
@@ -189,16 +185,6 @@ export const addMeeting = asyncHandler(async (req, res) => {
             emailTemplateValuesSet
           );
           // End of Email sending section
-
-          console.log(
-            `Notification sent to committee :${
-              member?.dataValues?.User &&
-              member?.dataValues?.User?.dataValues?.fullname
-            } - ${
-              member?.dataValues?.User &&
-              member?.dataValues?.User?.dataValues?.email
-            }`
-          );
         });
     });
 
@@ -214,7 +200,6 @@ export const addMeeting = asyncHandler(async (req, res) => {
       await roomBookingEmail(quest, emailTemplateValuesSet);
       // End of Email sending section
 
-      console.log(`Notification sent to guestUser : ${quest}`);
     });
 
   res.status(201).json({
@@ -569,10 +554,6 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         };
         await roomBookingUpdateEmail(members?.dataValues?.email, emailTemplateValuesSet);
         // End of Email sending section
-
-      console.log(
-        `Update meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
-      );
     });
 
   // Notifications will be done here for all committee user
@@ -611,16 +592,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
             emailTemplateValuesSet
           );
           // End of Email sending section
-
-          console.log(
-            `Update meeting notification sent to committee :${
-              member?.dataValues?.User &&
-              member?.dataValues?.User?.dataValues?.fullname
-            } - ${
-              member?.dataValues?.User &&
-              member?.dataValues?.User?.dataValues?.email
-            }`
-          );
+     
         });
     });
 
@@ -637,7 +609,6 @@ export const updateMeeting = asyncHandler(async (req, res) => {
       await roomBookingUpdateEmail(quest, emailTemplateValuesSet);
       // End of Email sending section
 
-      console.log(`Update meeting notification sent to guestUser : ${quest}`);
     });
   res
     .status(200)
@@ -837,9 +808,6 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
       await roomBookingPostponeEmail(members?.dataValues?.email, emailTemplateValuesSet);
       // End of Email sending section
 
-      console.log(
-        `Postpone meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
-      );
     });
 
   // Notifications will be done here for all committee user
@@ -878,15 +846,6 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
               emailTemplateValuesSet
             );
             // End of Email sending section
-          console.log(
-            `Postpone meeting notification sent to committee :${
-              member?.dataValues?.User &&
-              member?.dataValues?.User?.dataValues?.fullname
-            } - ${
-              member?.dataValues?.User &&
-              member?.dataValues?.User?.dataValues?.email
-            }`
-          );
         });
     });
 
@@ -903,7 +862,6 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
        await roomBookingPostponeEmail(quest, emailTemplateValuesSet);
        // End of Email sending section
 
-      console.log(`Postpone meeting notification sent to guestUser : ${quest}`);
     });
   res
     .status(200)
@@ -1019,10 +977,6 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
         };
         await roomBookingChangeStatusEmail(members?.dataValues?.email, emailTemplateValuesSet,meetingStatus);
         // End of Email sending section
-
-        console.log(
-          `${meetingStatus} meeting notification sent to attendee:  ${members?.dataValues?.fullname}- ${members?.dataValues?.email}`
-        );
       });
 
     // Notifications will be done here for all committee user
@@ -1059,16 +1013,6 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
             meetingStatus
           );
           // End of Email sending section
-
-            console.log(
-              `${meetingStatus} meeting notification sent to committee :${
-                member?.dataValues?.User &&
-                member?.dataValues?.User?.dataValues?.fullname
-              } - ${
-                member?.dataValues?.User &&
-                member?.dataValues?.User?.dataValues?.email
-              }`
-            );
           });
       });
 
@@ -1084,8 +1028,6 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
       };
       await roomBookingChangeStatusEmail(quest, emailTemplateValuesSet,meetingStatus);
       // End of Email sending section
-
-        console.log(`${meetingStatus} meeting notification sent to guestUser : ${quest}`);
       });
   });
 

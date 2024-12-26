@@ -57,7 +57,6 @@ async function getAccessTokenMicrosoftCalendar(authCode) {
             payload.toString(),
             { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
         );
-        console.log('Access Token:', response.data);
     } catch (error) {
         console.error('Error Response:', error.response?.data || error.message);
     }
