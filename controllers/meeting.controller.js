@@ -12,9 +12,15 @@ import MeetingCommittee from "../models/MeetingCommittee.js";
 import CommitteeMember from "../models/CommitteeMember.models.js";
 import Committee from "../models/Committee.models.js";
 import Notification from "../models/Notification.models.js";
-import { roomBookingChangeStatusEmail, roomBookingEmail, roomBookingPostponeEmail, roomBookingUpdateEmail } from "../nodemailer/roomEmail.js";
+import {
+  roomBookingChangeStatusEmail,
+  roomBookingEmail,
+  roomBookingPostponeEmail,
+  roomBookingUpdateEmail,
+} from "../nodemailer/roomEmail.js";
 import { getRoomByIdService } from "../services/Room.service.js";
 import { getUserByIdService } from "../services/User.service.js";
+import { cancelledEventMeetingData, eventMeetingData, formatDateToICS, postponeEventMeetingData, updateEventMeetingData } from "../utils/ics.js";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
@@ -121,8 +127,19 @@ export const addMeeting = asyncHandler(async (req, res) => {
     endTime: newMeeting?.dataValues?.endTime,
     location: rooms[0]?.dataValues?.Location?.locationName,
     organizerName: organizer[0]?.dataValues?.fullname,
-    meetingURL: "#",
   };
+  const eventData = {
+    uid: newMeeting?.dataValues?.id,
+    meetingDate: newMeeting?.dataValues?.meetingDate,
+    startTime: newMeeting?.dataValues?.startTime,
+    endTime: newMeeting?.dataValues?.endTime,
+    summary: newMeeting?.dataValues?.subject,
+    description: newMeeting?.dataValues?.notes,
+    location: rooms[0]?.dataValues?.Location?.locationName,
+    organizerName: organizer[0]?.dataValues?.fullname,
+    organizerEmail: organizer[0]?.dataValues?.email,
+  };
+  const eventDetails = eventMeetingData(eventData);
 
   // Notifications will be done here
   attendees &&
@@ -145,7 +162,11 @@ export const addMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: members?.dataValues?.fullname,
       };
-      await roomBookingEmail(members?.dataValues?.email, emailTemplateValuesSet);
+      await roomBookingEmail(
+        eventDetails,
+        members?.dataValues?.email,
+        emailTemplateValuesSet
+      );
       // End of Email sending section
     });
 
@@ -181,6 +202,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
             recipientName: member?.dataValues?.User?.dataValues?.fullname,
           };
           await roomBookingEmail(
+            eventDetails,
             member?.dataValues?.User?.dataValues?.email,
             emailTemplateValuesSet
           );
@@ -197,9 +219,8 @@ export const addMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: recipientName,
       };
-      await roomBookingEmail(quest, emailTemplateValuesSet);
+      await roomBookingEmail(eventDetails, quest, emailTemplateValuesSet);
       // End of Email sending section
-
     });
 
   res.status(201).json({
@@ -246,7 +267,6 @@ export const getAllAdminMeetings = asyncHandler(async (req, res) => {
       {
         model: User,
       },
-     
     ],
   });
 
@@ -513,23 +533,32 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     updateOnDuplicate: ["CommitteeId", "MeetingId"], // Fields to update on conflict
   });
 
+  // Fetch the data for email
+  const rooms = await getRoomByIdService(roomId);
+  const organizer = await getUserByIdService(organizerId);
+  const emailTemplateValues = {
+    subject: meeting?.subject,
+    agenda: meeting?.agenda,
+    notes: meeting.notes,
+    roomName: rooms[0]?.dataValues?.name,
+    bookingDate: meeting.meetingDate,
+    startTime: meeting?.startTime,
+    endTime: meeting?.endTime,
+    location: rooms[0]?.dataValues?.Location?.locationName,
+    organizerName: organizer[0]?.dataValues?.fullname,
+  };
 
-   // Fetch the data for email
-   const rooms = await getRoomByIdService(roomId);
-   const organizer = await getUserByIdService(organizerId);
-   const emailTemplateValues = {
-     subject: meeting?.subject,
-     agenda: meeting?.agenda,
-     notes: meeting.notes,
-     roomName: rooms[0]?.dataValues?.name,
-     bookingDate: meeting.meetingDate,
-     startTime: meeting?.startTime,
-     endTime: meeting?.endTime,
-     location: rooms[0]?.dataValues?.Location?.locationName,
-     organizerName: organizer[0]?.dataValues?.fullname,
-     meetingURL: "#",
-   };
- 
+  const eventData = {
+    uid: meeting?.id,
+    meetingDate: meeting?.meetingDate,
+    startTime: meeting?.startTime,
+    endTime: meeting?.endTime,
+    summary: meeting?.subject,
+    description: meeting?.notes,
+    location: rooms[0]?.dataValues?.Location?.locationName,
+    sequence: 2,
+  };
+  const eventDetails = updateEventMeetingData(eventData);
 
   // Notifications will be done here
   attendees &&
@@ -547,13 +576,17 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         meetingId: meetingId,
       });
 
-         // Sending email to all attendees
-         const emailTemplateValuesSet = {
-          ...emailTemplateValues,
-          recipientName: members?.dataValues?.fullname,
-        };
-        await roomBookingUpdateEmail(members?.dataValues?.email, emailTemplateValuesSet);
-        // End of Email sending section
+      // Sending email to all attendees
+      const emailTemplateValuesSet = {
+        ...emailTemplateValues,
+        recipientName: members?.dataValues?.fullname,
+      };
+      await roomBookingUpdateEmail(
+        eventDetails,
+        members?.dataValues?.email,
+        emailTemplateValuesSet
+      );
+      // End of Email sending section
     });
 
   // Notifications will be done here for all committee user
@@ -582,40 +615,38 @@ export const updateMeeting = asyncHandler(async (req, res) => {
             meetingId: meetingId,
           });
 
-           // Sending email to all attendees
-           const emailTemplateValuesSet = {
+          // Sending email to all attendees
+          const emailTemplateValuesSet = {
             ...emailTemplateValues,
             recipientName: member?.dataValues?.User?.dataValues?.fullname,
           };
           await roomBookingUpdateEmail(
+            eventDetails,
             member?.dataValues?.User?.dataValues?.email,
             emailTemplateValuesSet
           );
           // End of Email sending section
-     
         });
     });
 
   // Notifications will be done here for all quest user
   guestUser &&
-    guestUser.split(",").forEach(async(quest) => {
-
+    guestUser.split(",").forEach(async (quest) => {
       // Sending email to all attendees
       const recipientName = quest.split("@")[0];
       const emailTemplateValuesSet = {
         ...emailTemplateValues,
         recipientName: recipientName,
       };
-      await roomBookingUpdateEmail(quest, emailTemplateValuesSet);
+      await roomBookingUpdateEmail(eventDetails,quest, emailTemplateValuesSet);
       // End of Email sending section
-
     });
   res
     .status(200)
     .json({ message: "Meeting Update successfully", data: meeting });
 });
 
-// 4. Postpone a meeting
+// 4. Rescheduled a meeting
 export const postponeMeeting = asyncHandler(async (req, res) => {
   const { meetingId } = req.params;
   const {
@@ -780,8 +811,21 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     endTime: meeting?.endTime,
     location: rooms[0]?.dataValues?.Location?.locationName,
     organizerName: organizer[0]?.dataValues?.fullname,
-    meetingURL: "#",
   };
+
+  const eventData = {
+    uid: meeting?.id,
+    meetingDate: meeting?.meetingDate,
+    startTime: meeting?.startTime,
+    endTime: meeting?.endTime,
+    summary: meeting?.subject,
+    description: meeting?.notes,
+    location: rooms[0]?.dataValues?.Location?.locationName,
+    sequence:3,
+    organizerName: organizer[0]?.dataValues?.fullname,
+    organizerEmail: organizer[0]?.dataValues?.email,
+  };
+  const eventDetails = postponeEventMeetingData(eventData);
 
   // Notifications will be done here
   attendees &&
@@ -793,8 +837,8 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
 
       // Header notification section
       await Notification.create({
-        type: "Meeting Postpone",
-        message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
+        type: "Meeting Rescheduled",
+        message: `The meeting "${meeting?.dataValues?.subject}" has been Rescheduled.`,
         userId: members?.dataValues?.id,
         isRead: false,
         meetingId: meetingId,
@@ -805,9 +849,12 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: members?.dataValues?.fullname,
       };
-      await roomBookingPostponeEmail(members?.dataValues?.email, emailTemplateValuesSet);
+      await roomBookingPostponeEmail(
+        eventDetails,
+        members?.dataValues?.email,
+        emailTemplateValuesSet
+      );
       // End of Email sending section
-
     });
 
   // Notifications will be done here for all committee user
@@ -829,43 +876,42 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
         members?.map(async (member) => {
           // Header notification section
           await Notification.create({
-            type: "Meeting Postpone",
-            message: `The meeting "${meeting?.dataValues?.subject}" has been Postpone.`,
+            type: "Meeting Rescheduled",
+            message: `The meeting "${meeting?.dataValues?.subject}" has been Rescheduled.`,
             userId: member?.dataValues?.userId,
             isRead: false,
             meetingId: meetingId,
           });
 
-            // Sending email to all attendees
-            const emailTemplateValuesSet = {
-              ...emailTemplateValues,
-              recipientName: member?.dataValues?.User?.dataValues?.fullname,
-            };
-            await roomBookingPostponeEmail(
-              member?.dataValues?.User?.dataValues?.email,
-              emailTemplateValuesSet
-            );
-            // End of Email sending section
+          // Sending email to all attendees
+          const emailTemplateValuesSet = {
+            ...emailTemplateValues,
+            recipientName: member?.dataValues?.User?.dataValues?.fullname,
+          };
+          await roomBookingPostponeEmail(
+            eventDetails,
+            member?.dataValues?.User?.dataValues?.email,
+            emailTemplateValuesSet
+          );
+          // End of Email sending section
         });
     });
 
   // Notifications will be done here for all quest user
   guestUser &&
-    guestUser.split(",").forEach(async(quest) => {
-
-       // Sending email to all attendees
-       const recipientName = quest.split("@")[0];
-       const emailTemplateValuesSet = {
-         ...emailTemplateValues,
-         recipientName: recipientName,
-       };
-       await roomBookingPostponeEmail(quest, emailTemplateValuesSet);
-       // End of Email sending section
-
+    guestUser.split(",").forEach(async (quest) => {
+      // Sending email to all attendees
+      const recipientName = quest.split("@")[0];
+      const emailTemplateValuesSet = {
+        ...emailTemplateValues,
+        recipientName: recipientName,
+      };
+      await roomBookingPostponeEmail(eventDetails,quest, emailTemplateValuesSet);
+      // End of Email sending section
     });
   res
     .status(200)
-    .json({ message: "Meeting Postpone successfully", data: meeting });
+    .json({ message: "Meeting Rescheduled successfully", data: meeting });
 });
 
 // 5. Delete a meeting
@@ -939,21 +985,39 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
     });
 
     // Fetch the data for email
-   const rooms = await getRoomByIdService(meeting[0]?.dataValues?.roomId);
-   const organizer = await getUserByIdService(meeting[0]?.dataValues?.organizerId);
-   const emailTemplateValues = {
-     subject: meeting[0]?.dataValues?.subject,
-     agenda: meeting[0]?.dataValues?.agenda,
-     notes: meeting[0]?.dataValues?.notes,
-     roomName: rooms[0]?.dataValues?.name,
-     bookingDate: meeting[0]?.dataValues?.meetingDate,
-     startTime: meeting[0]?.dataValues?.startTime,
-     endTime: meeting[0]?.dataValues?.endTime,
-     location: rooms[0]?.dataValues?.Location?.locationName,
-     organizerName: organizer[0]?.dataValues?.fullname,
-     meetingURL: "#",
-   };
+    const rooms = await getRoomByIdService(meeting[0]?.dataValues?.roomId);
+    const organizer = await getUserByIdService(
+      meeting[0]?.dataValues?.organizerId
+    );
+    const emailTemplateValues = {
+      subject: meeting[0]?.dataValues?.subject,
+      agenda: meeting[0]?.dataValues?.agenda,
+      notes: meeting[0]?.dataValues?.notes,
+      roomName: rooms[0]?.dataValues?.name,
+      bookingDate: meeting[0]?.dataValues?.meetingDate,
+      startTime: meeting[0]?.dataValues?.startTime,
+      endTime: meeting[0]?.dataValues?.endTime,
+      location: rooms[0]?.dataValues?.Location?.locationName,
+      organizerName: organizer[0]?.dataValues?.fullname,
+    };
+let eventData='';
+let eventDetails='';
 
+if(meetingStatus==='cancelled'){
+     eventData = {
+      uid: meeting[0]?.dataValues?.id,
+      meetingDate: meeting[0]?.dataValues?.meetingDate,
+      startTime: meeting[0]?.dataValues?.startTime,
+      endTime: meeting[0]?.dataValues?.endTime,
+      summary: meeting[0]?.dataValues?.subject,
+      description: meeting[0]?.dataValues?.notes,
+      location: rooms[0]?.dataValues?.Location?.locationName,
+      sequence:4,
+      organizerName: organizer[0]?.dataValues?.fullname,
+      organizerEmail: organizer[0]?.dataValues?.email,
+    };
+     eventDetails = cancelledEventMeetingData(eventData);
+  }
     // Notifications will be done here
     attendees &&
       attendees.forEach(async (attendee) => {
@@ -970,12 +1034,17 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
           meetingId: meetingId,
         });
 
-         // Sending email to all attendees
-         const emailTemplateValuesSet = {
+        // Sending email to all attendees
+        const emailTemplateValuesSet = {
           ...emailTemplateValues,
           recipientName: members?.dataValues?.fullname,
         };
-        await roomBookingChangeStatusEmail(members?.dataValues?.email, emailTemplateValuesSet,meetingStatus);
+        await roomBookingChangeStatusEmail(
+          eventDetails,
+          members?.dataValues?.email,
+          emailTemplateValuesSet,
+          meetingStatus
+        );
         // End of Email sending section
       });
 
@@ -1003,31 +1072,36 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
             });
 
             // Sending email to all attendees
-           const emailTemplateValuesSet = {
-            ...emailTemplateValues,
-            recipientName: member?.dataValues?.User?.dataValues?.fullname,
-          };
-          await roomBookingChangeStatusEmail(
-            member?.dataValues?.User?.dataValues?.email,
-            emailTemplateValuesSet,
-            meetingStatus
-          );
-          // End of Email sending section
+            const emailTemplateValuesSet = {
+              ...emailTemplateValues,
+              recipientName: member?.dataValues?.User?.dataValues?.fullname,
+            };
+            await roomBookingChangeStatusEmail(
+              eventDetails,
+              member?.dataValues?.User?.dataValues?.email,
+              emailTemplateValuesSet,
+              meetingStatus
+            );
+            // End of Email sending section
           });
       });
 
     // Notifications will be done here for all quest user
     meeting?.dataValues?.guestUser &&
       meeting?.dataValues?.guestUser.split(",").forEach(async (quest) => {
-
-         // Sending email to all attendees
-      const recipientName = quest.split("@")[0];
-      const emailTemplateValuesSet = {
-        ...emailTemplateValues,
-        recipientName: recipientName,
-      };
-      await roomBookingChangeStatusEmail(quest, emailTemplateValuesSet,meetingStatus);
-      // End of Email sending section
+        // Sending email to all attendees
+        const recipientName = quest.split("@")[0];
+        const emailTemplateValuesSet = {
+          ...emailTemplateValues,
+          recipientName: recipientName,
+        };
+        await roomBookingChangeStatusEmail(
+          eventDetails,
+          quest,
+          emailTemplateValuesSet,
+          meetingStatus
+        );
+        // End of Email sending section
       });
   });
 

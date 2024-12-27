@@ -80,8 +80,6 @@ export const ROOM_BOOKING_REQUEST_TEMPLATE = `
                 <p><strong>Agenda:</strong> {agenda}</p>
                 <p><strong>Description:</strong> {notes}</p>
             </div>
-            <p>If you want join the meeting, please use the link below:</p>
-            <a href="{meetingURL}" class="button">Join Meeting</a>
         </div>
         <div class="email-footer">
             © 2024 CRBMS. All Rights Reserved.
@@ -96,7 +94,7 @@ export const ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE=`<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Booking Postponed</title>
+    <title>Room Booking Rescheduled</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -160,12 +158,12 @@ export const ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE=`<!DOCTYPE html>
 <body>
     <div class="email-container">
         <div class="email-header">
-            Room Booking Postponed
+            Room Booking Rescheduled
         </div>
         <div class="email-body">
-            <h2>Room Booking Postponed</h2>
+            <h2>Room Booking Rescheduled</h2>
             <p>Dear {recipientName},</p>
-            <p>Your room booking has been postponed. Here are the updated postponed:</p>
+            <p>Your room booking has been Rescheduled. Here are the updated Rescheduled:</p>
             <div class="email-details">
                  <p><strong>Room Name:</strong> {roomName}</p>
                 <p><strong>Date:</strong> {bookingDate}</p>
@@ -176,8 +174,6 @@ export const ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE=`<!DOCTYPE html>
                 <p><strong>Agenda:</strong> {agenda}</p>
                 <p><strong>Description:</strong> {notes}</p>
             </div>
-             <p>If you want join the meeting, please use the link below:</p>
-            <a href="{meetingURL}" class="button">Join Meeting</a>
         </div>
         <div class="email-footer">
             © 2024 CRBMS. All Rights Reserved.
@@ -271,8 +267,6 @@ export const ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE=`<!DOCTYPE html>
                 <p><strong>Agenda:</strong> {agenda}</p>
                 <p><strong>Description:</strong> {notes}</p>
             </div>
-             <p>If you want join the meeting, please use the link below:</p>
-            <a href="{meetingURL}" class="button">Join Meeting</a>
         </div>
         <div class="email-footer">
             © 2024 CRBMS. All Rights Reserved.
@@ -512,9 +506,6 @@ export const ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE=`<!DOCTYPE html>
                 <li><strong>Location:</strong> {location}</li>
                 <li><strong>Organizer:</strong> {organizerName}</li>
             </ul>
-            <p>click the link below for meeting:</p>
-            <a href="{meetingURL}" class="button">Join Meeting</a>
-        </div>
         <div class="footer">
             <p>If you have any questions, feel free to reach out to us.</p>
             <p>This is an automated email, please do not reply.</p>
@@ -591,9 +582,6 @@ export const ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE=`<!DOCTYPE html>
                 <li><strong>Location:</strong> {location}</li>
                 <li><strong>Organizer:</strong> {organizerName}</li>
             </ul>
-            <p>Please join the meeting with below link.</p>
-            <a href="{meetingURL}" class="button">Join Meeting</a>
-        </div>
         <div class="footer">
             <p>If you have any questions, feel free to reach out to us.</p>
             <p>This is an automated email, please do not reply.</p>
