@@ -182,6 +182,24 @@ export const ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE=`<!DOCTYPE html>
 </body>
 </html>`
 
+export const ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE=`
+        <p>Dear {organizerName},</p>
+        <p>This is a notification regarding your scheduled meeting, <strong>{roomName}</strong>, originally planned as follows:</p>
+        <ul>
+          <li><strong>Date:</strong> {bookingDate}</li>
+          <li><strong>Start Time:</strong> {startTime}</li>
+          <li><strong>End Time:</strong> {endTime}</li>
+        </ul>
+        <p>It appears that additional time may be needed to cover all discussion points or complete the agenda. You may consider extending the meeting duration to the proposed new end time:</p>
+        <ul>
+          <li><strong>Proposed New End Time:</strong> {newEndTime}</li>
+        </ul>
+        <p>Please confirm the extension or adjust the schedule as necessary. If you have any concerns or need assistance, feel free to reach out.</p>
+        <p>Thank you for your attention to this matter.</p>
+        <p>Best regards,</p>
+        <p><strong>Meeting Scheduler System</strong></p>
+      `
+
 export const ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE=`<!DOCTYPE html>
 <html>
 <head>

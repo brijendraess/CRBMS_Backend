@@ -81,7 +81,6 @@ export const addMeeting = asyncHandler(async (req, res) => {
       endTime: { [Op.gt]: newFormattedStartTimeChecked },
     },
   });
-
   if (overlappingMeeting) {
     throw new ApiError(400, "Room is already booked for the selected time");
   }
