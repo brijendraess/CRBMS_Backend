@@ -46,6 +46,7 @@ public/room-images
 public/room-gallery
 public/avatars
 public/location
+public/ics
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
