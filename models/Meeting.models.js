@@ -3,7 +3,6 @@ import { sequelize } from "../database/database.js";
 import Room from "./Room.models.js";
 import User from "./User.models.js";
 import MeetingUser from "./MeetingUser.js";
-import Location from "./Location.model.js";
 import Committee from "./Committee.models.js";
 import MeetingCommittee from "./MeetingCommittee.js";
 
