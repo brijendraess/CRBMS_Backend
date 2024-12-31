@@ -133,11 +133,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All Fields Are Required");
   }
 
-<<<<<<< HEAD
   const user = await User.findOne({ where: { userName} });
-=======
-  const user = await User.findOne({ where: { email } });
->>>>>>> 1be170fdac3833bc8ab05ba81e1924f068f1fbfa
 
   if (!user) {
     throw new ApiError(401, "User Not Found or not activated yet");
@@ -329,13 +325,8 @@ const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.findAndCountAll({
     attributes: { exclude: ["password", "refreshToken"] },
     order: [["createdAt", "DESC"]],
-<<<<<<< HEAD
    // limit: parseInt(limit),
     //offset: parseInt(offset),
-=======
-    // limit: parseInt(limit),
-    // offset: parseInt(offset),
->>>>>>> 1be170fdac3833bc8ab05ba81e1924f068f1fbfa
     paranoid: false,
   });
 
