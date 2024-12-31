@@ -2,14 +2,14 @@ import { Op } from "sequelize";
 import { ApiError } from "../utils/ApiError.js";
 import User from "../models/User.models.js";
 
-export const verifyOTPHelper = async (email, otp) => {
+export const verifyOTPHelper = async (userName, otp) => {
   if ([otp].some((field) => field?.trim() === "")) {
     throw new ApiError(400, "OTP are required");
   }
 
   const user = await User.findOne({
     where: {
-      email,
+      userName,
       otpExpiresAt: {
         [Op.gt]: new Date(),
       },

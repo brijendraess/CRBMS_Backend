@@ -11,8 +11,7 @@ const User = sequelize.define(
     },
     email: {
       type: DataTypes.STRING(255),
-      allowNull: false,
-      unique: true,
+      allowNull: true,
       validate: {
         isEmail: true,
       },
@@ -21,14 +20,6 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    // firstName: {
-    //   type: DataTypes.STRING(100),
-    //   allowNull: false,
-    // },
-    // lastName: {
-    //   type: DataTypes.STRING(100),
-    //   allowNull: false,
-    // },
     fullname: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -36,15 +27,12 @@ const User = sequelize.define(
     phoneNumber: {
       type: DataTypes.STRING(20),
       allowNull: true,
+    },
+    userName: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
       unique: true,
     },
-    // roleId: {
-    //   type: DataTypes.UUID,
-    //   references: {
-    //     model: "roles",
-    //     key: "id",
-    //   },
-    // },
     isAdmin: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
