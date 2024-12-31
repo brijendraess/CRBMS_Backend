@@ -17,6 +17,7 @@ import fs from "fs";
 import path from "path";
 import CommitteeMember from "../models/CommitteeMember.models.js";
 import { sequelize } from "../database/database.js";
+import { generateMD5 } from "../utils/utils.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -30,6 +31,7 @@ const options = {
 const registerUser = asyncHandler(async (req, res) => {
   const {
     email,
+    userName,
     password,
     fullname,
     role,
@@ -66,24 +68,24 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Check if user already exists
-  const existingUser = await User.findOne({ where: { email, phoneNumber } });
+  const existingUser = await User.findOne({ where: { userName } });
   if (existingUser) {
     throw new ApiError(400, "User already exists");
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = generateMD5(password);
   const avatarPath = req.file ? `avatars/${req.file.filename}` : null;
 
   try {
     // Create the user
     const newUser = await User.create({
       email,
+      userName,
       password: hashedPassword,
       fullname,
       phoneNumber,
       isAdmin: role,
       avatarPath,
-      role,
     });
 
     // Add the user to committees if provided
@@ -125,20 +127,25 @@ const registerUser = asyncHandler(async (req, res) => {
 
 // LOGIN USER
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { userName, password } = req.body;
 
-  if ([email, password].some((field) => field?.trim() === ("" || undefined))) {
+  if ([userName, password].some((field) => field?.trim() === ("" || undefined))) {
     throw new ApiError(400, "All Fields Are Required");
   }
 
+<<<<<<< HEAD
+  const user = await User.findOne({ where: { userName} });
+=======
   const user = await User.findOne({ where: { email } });
+>>>>>>> 1be170fdac3833bc8ab05ba81e1924f068f1fbfa
 
   if (!user) {
     throw new ApiError(401, "User Not Found or not activated yet");
   }
-
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-
+  let isPasswordValid =false
+  if (user.password === generateMD5(password)) {
+  isPasswordValid = true;
+  }
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid Password");
   }
@@ -186,14 +193,14 @@ const verifyOTPForLogin = asyncHandler(async (req, res) => {
 
 // SendOTPAgain
 const sendOTPAgain = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const { userName } = req.body;
 
-  if (!email?.trim()) {
-    throw new ApiError(400, "Email is required");
+  if (!userName?.trim()) {
+    throw new ApiError(400, "user name is required");
   }
 
   // Find user in the database
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ where: { userName } });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -322,8 +329,13 @@ const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.findAndCountAll({
     attributes: { exclude: ["password", "refreshToken"] },
     order: [["createdAt", "DESC"]],
+<<<<<<< HEAD
+   // limit: parseInt(limit),
+    //offset: parseInt(offset),
+=======
     // limit: parseInt(limit),
     // offset: parseInt(offset),
+>>>>>>> 1be170fdac3833bc8ab05ba81e1924f068f1fbfa
     paranoid: false,
   });
 
