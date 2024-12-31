@@ -41,7 +41,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // Validation for required fields
   if (
-    [email, password, fullname, phoneNumber,role].some(
+    [email, password, fullname, phoneNumber, role].some(
       (field) => !field || field.trim() === ""
     )
   ) {
@@ -84,7 +84,7 @@ const registerUser = asyncHandler(async (req, res) => {
       password: hashedPassword,
       fullname,
       phoneNumber,
-      isAdmin:role,
+      isAdmin: role,
       avatarPath,
     });
 
@@ -133,7 +133,11 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All Fields Are Required");
   }
 
+<<<<<<< HEAD
   const user = await User.findOne({ where: { userName} });
+=======
+  const user = await User.findOne({ where: { email } });
+>>>>>>> 1be170fdac3833bc8ab05ba81e1924f068f1fbfa
 
   if (!user) {
     throw new ApiError(401, "User Not Found or not activated yet");
@@ -310,8 +314,8 @@ const getUserById = asyncHandler(async (req, res) => {
 
 // get ALL user(For Admin)
 const getAllUsers = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
-  const offset = (parseInt(page) - 1) * parseInt(limit);
+  // const { page = 1, limit = 10 } = req.query;
+  // const offset = (parseInt(page) - 1) * parseInt(limit);
 
   const loggedInUser = await User.findByPk(req.user.id);
   if (!loggedInUser) {
@@ -325,8 +329,13 @@ const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.findAndCountAll({
     attributes: { exclude: ["password", "refreshToken"] },
     order: [["createdAt", "DESC"]],
+<<<<<<< HEAD
    // limit: parseInt(limit),
     //offset: parseInt(offset),
+=======
+    // limit: parseInt(limit),
+    // offset: parseInt(offset),
+>>>>>>> 1be170fdac3833bc8ab05ba81e1924f068f1fbfa
     paranoid: false,
   });
 
@@ -340,8 +349,8 @@ const getAllUsers = asyncHandler(async (req, res) => {
       {
         users,
         totalUsers: users.count,
-        totalPages: Math.ceil(users.count / limit),
-        currentPage: page,
+        // totalPages: Math.ceil(users.count / limit),
+        // currentPage: page,
       },
       "Users retrieved successfully"
     )
@@ -350,7 +359,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
 // Update profile
 const updateMyProfile = asyncHandler(async (req, res) => {
-  const { fullname, email, phoneNumber } = req.body;
+  // const { fullname, email, phoneNumber } = req.body;
 
   if (!req.user.id) {
     throw new ApiError(401, "Not authenticated");
@@ -362,9 +371,9 @@ const updateMyProfile = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  user.fullname = fullname || user.fullname;
-  user.email = email || user.email;
-  user.phoneNumber = phoneNumber || user.phoneNumber;
+  // user.fullname = fullname || user.fullname;
+  // user.email = email || user.email;
+  // user.phoneNumber = phoneNumber || user.phoneNumber;
 
   await user.save();
 
@@ -374,7 +383,7 @@ const updateMyProfile = asyncHandler(async (req, res) => {
 });
 
 // Update User (Admin)
-const updateUserProfile = asyncHandler(async (req, res) => { 
+const updateUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { fullname, email, phoneNumber, isAdmin, committees } = req.body;
   const loggedInUser = await User.findByPk(req.user.id);
@@ -383,7 +392,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please log in");
   }
 
-    let avatarPath = null;
+  let avatarPath = null;
 
   const user = await User.findByPk(id);
 
@@ -406,22 +415,24 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
   await user.save();
 
-    if (!user) {
-      if (req.file) fs.unlinkSync(`public/${avatarPath}`); // Remove image if room creation fails
-      throw new ApiError(500, "Failed to profile image");
+  if (!user) {
+    if (req.file) fs.unlinkSync(`public/${avatarPath}`); // Remove image if room creation fails
+    throw new ApiError(500, "Failed to profile image");
+  }
+
+  if (req.file) {
+    const avatarPath = req.file ? `avatars/${req.file.filename}` : null;
+    const newAvatarPath = `avatars/${fullname.replace(/\s+/g, "_")}_${
+      user.id
+    }${path.extname(req.file.originalname).toLowerCase()}`;
+    try {
+      fs.renameSync(`public/${avatarPath}`, `public/${newAvatarPath}`);
+    } catch (error) {
+      console.error("Error renaming file:", error.message);
     }
-    
-    if (req.file) {
-      const avatarPath = req.file ? `avatars/${req.file.filename}` : null;
-      const newAvatarPath = `avatars/${fullname.replace(/\s+/g, "_")}_${user.id}${path.extname(req.file.originalname).toLowerCase()}`;
-      try {
-        fs.renameSync(`public/${avatarPath}`, `public/${newAvatarPath}`);
-      } catch (error) {
-        console.error("Error renaming file:", error.message);
-      }
-      user.avatarPath = newAvatarPath;
-      await user.save();
-    }
+    user.avatarPath = newAvatarPath;
+    await user.save();
+  }
 
   // Synchronize committees in the `committee_members` table
   const existingCommitteeIds = (
@@ -593,6 +604,38 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, {}, "Password reset successful"));
 });
 
+const resetPasswordAfterLoggedIn = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res
+      .status(400)
+      .json(
+        new ApiResponse(400, {}, "Old password and new password are required")
+      );
+  }
+
+  const user = await User.findByPk(req.user.id);
+
+  if (!user) {
+    return res.status(404).json(new ApiResponse(404, {}, "User not found"));
+  }
+
+  const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isPasswordMatch) {
+    return res
+      .status(401)
+      .json(new ApiResponse(401, {}, "Old password is incorrect"));
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  user.password = hashedPassword;
+  await user.save();
+
+  res.status(200).json(new ApiResponse(200, {}, "Password reset successful"));
+});
+
 const updateBlockStatus = asyncHandler(async (req, res) => {
   const { userId } = req.body;
 
@@ -679,4 +722,5 @@ export {
   updateBlockStatus,
   softDeleteUser,
   permanentDeleteUser,
+  resetPasswordAfterLoggedIn,
 };
