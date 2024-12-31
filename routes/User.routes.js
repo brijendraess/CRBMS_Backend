@@ -18,43 +18,48 @@ import {
   updateUserProfile,
   softDeleteUser,
   permanentDeleteUser,
+  resetPasswordAfterLoggedIn,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-router.route("/check-auth").get(verifyJWT, checkAuth); 
+router.route("/check-auth").get(verifyJWT, checkAuth);
 
 // POST Register /api/v1/auth
-router.route("/register").post(upload.single("avatar"), registerUser); 
+router.route("/register").post(upload.single("avatar"), registerUser);
 
 // Authentication
-router.route("/login").post(loginUser); 
+router.route("/login").post(loginUser);
 
 // VerifyOTP
-router.route("/verify-otp").post(verifyOTPForLogin); 
+router.route("/verify-otp").post(verifyOTPForLogin);
 
 // Logout
-router.route("/logout").post(logoutUser); 
+router.route("/logout").post(logoutUser);
 
 // Resend OTP
-router.route("/resend-otp").post(sendOTPAgain); 
+router.route("/resend-otp").post(sendOTPAgain);
 
 // Get MyProfile
-router.route("/my-profile").get(verifyJWT, getMyProfile); 
+router.route("/my-profile").get(verifyJWT, getMyProfile);
 
 // get all users
-router.route("/users").get(verifyJWT, getAllUsers); 
+router.route("/users").get(verifyJWT, getAllUsers);
 
 // Update my profile
-router.route("/update-my-profile").put(verifyJWT, updateMyProfile);
+router
+  .route("/update-my-profile")
+  .put(verifyJWT, upload.single("profileImage"), updateMyProfile);
 
 // Get User by id
 router.route("/:id").get(verifyJWT, getUserById);
 
 // Update User Profile
-router.route("/update-profile/:id").put(verifyJWT,upload.single("profileImage"),  updateUserProfile);
+router
+  .route("/update-profile/:id")
+  .put(verifyJWT, upload.single("profileImage"), updateUserProfile);
 
 // Change Password by user manually
 router.route("/update-password").put(verifyJWT, updatePassword);
@@ -65,10 +70,15 @@ router
   .put(verifyJWT, upload.single("avatar"), changeProfilePic);
 
 // Forgot Password
-router.route("/forgot-password").post(forgetPassword); 
+router.route("/forgot-password").post(forgetPassword);
 
 // reset-password
-router.route("/reset-password/:token").post(resetPassword); 
+router.route("/reset-password/:token").post(resetPassword);
+
+// Reset password after log in through profile.
+router
+  .route("/profile-reset-password")
+  .post(verifyJWT, resetPasswordAfterLoggedIn);
 
 router.route("/block-status").post(updateBlockStatus);
 
