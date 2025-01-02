@@ -378,7 +378,6 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { fullname, email, phoneNumber, isAdmin, committees } = req.body;
   const loggedInUser = await User.findByPk(req.user.id);
-
   if (!loggedInUser) {
     throw new ApiError(400, "Please log in");
   }
@@ -422,8 +421,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       console.error("Error renaming file:", error.message);
     }
     user.avatarPath = newAvatarPath;
-    await user.save();
+
   }
+  await user.save();
 
   // Synchronize committees in the `committee_members` table
   const existingCommitteeIds = (
@@ -442,13 +442,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   const committeesToRemove = existingCommitteeIds.filter(
     (committeeId) => !newCommitteeIds.includes(committeeId)
   );
-
   // Add new committees
   if (committeesToAdd.length > 0) {
     const committeeRecordsToAdd = committeesToAdd.map((committeeId) => ({
       userId: id,
       committeeId,
-      role: role,
     }));
     await CommitteeMember.bulkCreate(committeeRecordsToAdd);
   }
