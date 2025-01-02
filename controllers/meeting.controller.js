@@ -127,19 +127,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
     location: rooms[0]?.dataValues?.Location?.locationName,
     organizerName: organizer[0]?.dataValues?.fullname,
   };
-  const eventData = {
-    uid: newMeeting?.dataValues?.id,
-    meetingDate: newMeeting?.dataValues?.meetingDate,
-    startTime: newMeeting?.dataValues?.startTime,
-    endTime: newMeeting?.dataValues?.endTime,
-    summary: newMeeting?.dataValues?.subject,
-    description: newMeeting?.dataValues?.notes,
-    location: rooms[0]?.dataValues?.Location?.locationName,
-    organizerName: organizer[0]?.dataValues?.fullname,
-    organizerEmail: organizer[0]?.dataValues?.email,
-  };
-  const eventDetails = eventMeetingData(eventData);
-
+  
   // Notifications will be done here
   attendees &&
     attendees.forEach(async (attendee) => {
@@ -161,11 +149,11 @@ export const addMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: members?.dataValues?.fullname,
       };
-      await roomBookingEmail(
-        eventDetails,
-        members?.dataValues?.email,
-        emailTemplateValuesSet
-      );
+      // await roomBookingEmail(
+      //   eventDetails,
+      //   members?.dataValues?.email,
+      //   emailTemplateValuesSet
+      // );
       // End of Email sending section
     });
 
@@ -200,11 +188,11 @@ export const addMeeting = asyncHandler(async (req, res) => {
             ...emailTemplateValues,
             recipientName: member?.dataValues?.User?.dataValues?.fullname,
           };
-          await roomBookingEmail(
-            eventDetails,
-            member?.dataValues?.User?.dataValues?.email,
-            emailTemplateValuesSet
-          );
+          // await roomBookingEmail(
+          //   eventDetails,
+          //   member?.dataValues?.User?.dataValues?.email,
+          //   emailTemplateValuesSet
+          // );
           // End of Email sending section
         });
     });
@@ -218,7 +206,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: recipientName,
       };
-      await roomBookingEmail(eventDetails, quest, emailTemplateValuesSet);
+      //await roomBookingEmail(eventDetails, quest, emailTemplateValuesSet);
       // End of Email sending section
     });
 
@@ -1016,6 +1004,19 @@ if(meetingStatus==='cancelled'){
       organizerEmail: organizer[0]?.dataValues?.email,
     };
      eventDetails = cancelledEventMeetingData(eventData);
+  }else if (meetingStatus==='scheduled'){
+    const eventData = {
+      uid: meeting[0]?.dataValues?.id,
+      meetingDate: meeting[0]?.dataValues?.meetingDate,
+      startTime: meeting[0]?.dataValues?.startTime,
+      endTime: meeting[0]?.dataValues?.endTime,
+      summary: meeting[0]?.dataValues?.subject,
+      description: meeting[0]?.dataValues?.notes,
+      location: rooms[0]?.dataValues?.Location?.locationName,
+      organizerName: organizer[0]?.dataValues?.fullname,
+      organizerEmail: organizer[0]?.dataValues?.email,
+    };
+    eventDetails = eventMeetingData(eventData);
   }
     // Notifications will be done here
     attendees &&

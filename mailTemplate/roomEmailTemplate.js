@@ -530,15 +530,14 @@ export const ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE=`<!DOCTYPE html>
         </div>
     </div>
 </body>
-</html>
-`
+</html>`
 
-export const ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE=`<!DOCTYPE html>
+export const ROOM_BOOKING_START_REQUEST_TEMPLATE=`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ongoing Room Booking</title>
+    <title>Meeting Start Room Booking</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -587,7 +586,7 @@ export const ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE=`<!DOCTYPE html>
 <body>
     <div class="email-container">
         <div class="header">
-            <h2>Your Room Booking is Ongoing</h2>
+            <h2>Your Room Booking meeting started</h2>
         </div>
         <div class="content">
             <p>Hi <strong>{recipientName}</strong>,</p>
@@ -606,8 +605,7 @@ export const ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE=`<!DOCTYPE html>
         </div>
     </div>
 </body>
-</html>
-`
+</html>`
 
 export const ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE=`<!DOCTYPE html>
 <html lang="en">

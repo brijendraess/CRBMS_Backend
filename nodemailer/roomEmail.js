@@ -1,6 +1,6 @@
 
 import fs from "fs";
-import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE, ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE } from "../mailTemplate/roomEmailTemplate.js";
+import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_START_REQUEST_TEMPLATE, ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE } from "../mailTemplate/roomEmailTemplate.js";
 import { replacePlaceholders } from "../utils/emailResponse.js";
 import { cancelledICSFile, createICSFile, postponeICSFile, updateICSFile } from "../utils/ics.js";
 import { transporter, sender } from "./nodemailer.config.js";
@@ -60,7 +60,6 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
           path: filePath,
         }],
       });
-      console.log("Room Booking Update Confirmation");
     } catch (error) {
       console.error("Error sending room booking update confirmation email:", error);
       throw new Error(`Error sending room booking update confirmation email: ${error}`);
@@ -75,7 +74,6 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
         subject: `Action Required: Extend Meeting "${roomName}"`,
         html:replacePlaceholders(ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE,emailTemplateValues),
       });
-      console.log("Organizer to extend the meeting Confirmation");
     } catch (error) {
       console.error("Error sending organizer to extend the meeting confirmation email:", error);
       throw new Error(`Error sending organizer to extend the meeting confirmation email: ${error}`);
@@ -88,8 +86,8 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       templateName=ROOM_BOOKING_PENDING_REQUEST_TEMPLATE;
     }else if(meetingStatus==='scheduled'){
       templateName=ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE;
-    }else if(meetingStatus==='ongoing'){
-      templateName=ROOM_BOOKING_ONGOING_REQUEST_TEMPLATE;
+    }else if(meetingStatus==='start'){
+      templateName=ROOM_BOOKING_START_REQUEST_TEMPLATE;
     }else if(meetingStatus==='completed'){
       templateName=ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE;
     }else if(meetingStatus==='cancelled'){
@@ -109,6 +107,18 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
           path: filePath,
         }],
       }
+    }else if(meetingStatus==='scheduled'){
+      const {filePath,fileName} = createICSFile(eventDetails);
+      transporterData={
+        from: `"${sender.name}" <${sender.email}>`,
+        to: email,
+        subject: `Room Booking Confirmation`,
+        html:replacePlaceholders(templateName,emailTemplateValues),
+        attachments: [{
+          filename: fileName,
+          path: filePath,
+        }],
+      }
       }else{
         transporterData={
           from: `"${sender.name}" <${sender.email}>`,
@@ -118,7 +128,6 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
         }
       }
       transporter.sendMail(transporterData);
-      console.log(`Room ${meetingStatus} Confirmation`);
     } catch (error) {
       console.error(`Error sending room booking ${meetingStatus} confirmation email:`, error);
       throw new Error(`Error sending room booking ${meetingStatus} confirmation email: ${error}`);
