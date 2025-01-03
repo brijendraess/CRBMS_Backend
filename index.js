@@ -10,6 +10,7 @@ import Notification from "./models/Notification.models.js";
 import MeetingUser from "./models/MeetingUser.js";
 import MeetingCommittee from "./models/MeetingCommittee.js";
 import Meeting from "./models/Meeting.models.js";
+import User from "./models/User.models.js";
 
 const app = express();
 
@@ -75,7 +76,7 @@ dbConnection()
 const syncModels = async () => {
   let syncTable;
   try {
-    const syncTable = Meeting;
+    const syncTable = User;
     await syncTable.sync({ alter: true, force: true });
     console.log(syncTable, "table synced.");
   } catch (error) {
