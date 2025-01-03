@@ -13,6 +13,7 @@ import {
   deleteFoodBeverageService,
   editAmenityQuantityService,
   editFoodBeverageService,
+  editSanitationStatus,
   getAllAmenitiesActiveQuantityService,
   getAllAmenitiesQuantityService,
   getAllFoodBeverageActiveService,
@@ -567,6 +568,22 @@ export const editFoodBeverage = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Room food beverage updated successfully",
+    data: result,
+  });
+});
+
+export const updateSanitationStatus = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  const { status } = req.body;
+
+  const result = await editSanitationStatus(
+    status,
+    roomId
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Sanitation status updated successfully",
     data: result,
   });
 });
