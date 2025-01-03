@@ -22,6 +22,7 @@ import {
   deleteFoodBeverage,
   editFoodBeverage,
   getAllMeeting,
+  updateSanitationStatus,
 } from "../controllers/room.controller.js";
 import uploadRoomImage from "../middlewares/roomMulter.middleware.js";
 import multipleGalleryUpload from "../middlewares/galleryRoomMulter.middleware.js";
@@ -53,5 +54,6 @@ roomRouter.route("/single-room-gallery/:roomId").get(getSingleRoomController);
 
 roomRouter.route("/edit-amenity-quantity/:amenityQuantityId").put(editAmenityQuantity);
 roomRouter.route("/edit-food-beverage/:foodBeverageId").put(editFoodBeverage);
+roomRouter.route("/update-sanitation-status/:roomId").put(updateSanitationStatus);
 
 export default roomRouter;

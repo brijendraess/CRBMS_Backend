@@ -23,8 +23,8 @@ export const getAllAmenitiesQuantityService = async (roomId) => {
           model: User,
         },
       ],
-      where:{
-        roomId:roomId
+      where: {
+        roomId: roomId,
       },
       order: [["createdAt", "DESC"]],
     });
@@ -47,19 +47,15 @@ export const createAmenityQuantityService = async (
   amenityId
 ) => {
   try {
-
-    const roomAmenityQuantity = await RoomAmenityQuantity.findOne(
-      {
-        where:{
-          roomId:roomId,
-          amenityId:amenityId
-        }
-      }
-    );
+    const roomAmenityQuantity = await RoomAmenityQuantity.findOne({
+      where: {
+        roomId: roomId,
+        amenityId: amenityId,
+      },
+    });
     if (roomAmenityQuantity) {
       throw new ApiError(404, "Room amenity already present");
     }
-
 
     const roomAmenity = await RoomAmenityQuantity.create({
       quantity,
@@ -91,7 +87,7 @@ export const getAllAmenitiesActiveQuantityService = async (roomId) => {
         },
       ],
       order: [["createdAt", "DESC"]],
-      where: { status: true, roomId:roomId },
+      where: { status: true, roomId: roomId },
     });
 
     if (!quantityAmenities.length) {
@@ -132,9 +128,7 @@ export const editAmenityQuantityService = async (
   }
 };
 
-export const deleteAmenityQuantityService = async (
-  amenityQuantityId
-) => {
+export const deleteAmenityQuantityService = async (amenityQuantityId) => {
   try {
     const roomAmenityQuantity = await RoomAmenityQuantity.findByPk(
       amenityQuantityId
@@ -166,13 +160,12 @@ export const getAllFoodBeverageService = async (roomId) => {
           model: User,
         },
       ],
-      where:{
-        roomId:roomId
+      where: {
+        roomId: roomId,
       },
       order: [["createdAt", "DESC"]],
     });
 
-    
     return foodBeverage;
   } catch (error) {
     console.log("error", error);
@@ -188,19 +181,15 @@ export const createFoodBeverageService = async (
   foodBeverageId
 ) => {
   try {
-
-    const roomFoodBeverage = await RoomFoodBeverage.findOne(
-      {
-        where:{
-          roomId:roomId,
-          foodBeverageId:foodBeverageId
-        }
-      }
-    );
+    const roomFoodBeverage = await RoomFoodBeverage.findOne({
+      where: {
+        roomId: roomId,
+        foodBeverageId: foodBeverageId,
+      },
+    });
     if (roomFoodBeverage) {
       throw new ApiError(404, "Room food beverage already present");
     }
-
 
     const roomCreateRoomFoodBeverage = await RoomFoodBeverage.create({
       quantity,
@@ -232,7 +221,7 @@ export const getAllFoodBeverageActiveService = async (roomId) => {
         },
       ],
       order: [["createdAt", "DESC"]],
-      where: { status: true, roomId:roomId },
+      where: { status: true, roomId: roomId },
     });
 
     if (!foodBeverage.length) {
@@ -251,9 +240,7 @@ export const editFoodBeverageService = async (
   foodBeverageId
 ) => {
   try {
-    const roomFoodBeverage = await RoomFoodBeverage.findByPk(
-      foodBeverageId
-    );
+    const roomFoodBeverage = await RoomFoodBeverage.findByPk(foodBeverageId);
 
     if (!roomFoodBeverage) {
       throw new ApiError(404, "Room food beverage not found");
@@ -271,13 +258,29 @@ export const editFoodBeverageService = async (
   }
 };
 
-export const deleteFoodBeverageService = async (
-  foodBeverageId
-) => {
+export const editSanitationStatus = async (status, roomId) => {
   try {
-    const roomFoodBeverage = await RoomFoodBeverage.findByPk(
-      foodBeverageId
-    );
+    const roomSanitationStatus = await Room.findByPk(roomId);
+
+    if (!roomSanitationStatus) {
+      throw new ApiError(404, "Room food beverage not found");
+    }
+
+    roomSanitationStatus.sanitationStatus =
+      status ?? roomSanitationStatus.sanitationStatus;
+
+    await roomSanitationStatus.save();
+
+    return roomSanitationStatus;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+};
+
+export const deleteFoodBeverageService = async (foodBeverageId) => {
+  try {
+    const roomFoodBeverage = await RoomFoodBeverage.findByPk(foodBeverageId);
 
     if (!roomFoodBeverage) {
       throw new ApiError(404, "Room food beverage not found");
@@ -288,53 +291,52 @@ export const deleteFoodBeverageService = async (
   } catch (error) {
     console.log("error", error);
     throw error;
-  } 
+  }
 };
-export const getRoomByIdService = async (
-  roomId
-) => {
+export const getRoomByIdService = async (roomId) => {
   try {
-    const room = await Room.findAll( {
-      where:{
-        id:roomId
+    const room = await Room.findAll({
+      where: {
+        id: roomId,
       },
       attributes: { exclude: ["password"] },
-      include:[
+      include: [
         {
-          model:Location
-        },{
-          model:RoomGallery
+          model: Location,
         },
         {
-          model:RoomAmenityQuantity,
-          include:[
-            {
-              model:RoomAmenity
-            }
-          ]
+          model: RoomGallery,
         },
         {
-          model:RoomFoodBeverage,
-          include:[
+          model: RoomAmenityQuantity,
+          include: [
             {
-              model:FoodBeverage
-            }
-          ]
+              model: RoomAmenity,
+            },
+          ],
         },
         {
-          model:Meeting,
-          include:[
+          model: RoomFoodBeverage,
+          include: [
             {
-              model:User
-            }
-          ]
-        }
-      ]
+              model: FoodBeverage,
+            },
+          ],
+        },
+        {
+          model: Meeting,
+          include: [
+            {
+              model: User,
+            },
+          ],
+        },
+      ],
     });
 
     return room;
   } catch (error) {
     console.log("error", error);
     throw error;
-  } 
+  }
 };
