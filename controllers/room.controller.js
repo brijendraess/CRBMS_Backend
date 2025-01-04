@@ -16,6 +16,7 @@ import {
   editSanitationStatus,
   getAllAmenitiesActiveQuantityService,
   getAllAmenitiesQuantityService,
+  getallCurrentMeetingService,
   getAllFoodBeverageActiveService,
   getAllFoodBeverageService,
   getRoomByIdService,
@@ -95,24 +96,29 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     filterCapacity,
   } = req.query;
 
+const user=req.user.isAdmin
   // Checking the available time of the room
   const sanitationPeriod = 15;
   const tolerancePeriod = 15;
   let newFormattedStartTime = filterStartTime
     ? new Date(filterStartTime)
     : null; // HH:mm:ss
+
   const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
   filterStartTime &&
     newFormattedStartTime.setMinutes(
       newFormattedStartTime.getMinutes() - extraCalculatedTime
     );
+
   const newFormattedStartTimeChecked = newFormattedStartTime
     ? newFormattedStartTime.toTimeString().split(" ")[0]
     : null;
+
   // Convert startTime and endTime to TIME format
   const formattedEndTime = filterEndingTime
     ? new Date(filterEndingTime).toTimeString().split(" ")[0]
     : null; // HH:mm:ss
+
   const whereClause =
     filterDate && formattedEndTime && newFormattedStartTimeChecked
       ? {
@@ -123,6 +129,7 @@ export const getAllRooms = asyncHandler(async (req, res) => {
           }),
         }
       : 1;
+      
   const findAvailability =
     whereClause != 1
       ? await Meeting.findAll({
@@ -158,6 +165,7 @@ const filterCapacityCalculated=filterCapacity?filterCapacity:1;
       capacity: {
         [Op.gte]:filterCapacityCalculated,
       },
+      isAvailable:user ? { [Op.in]: [true, false] } : true,
     },
     include: [
       {
@@ -597,4 +605,12 @@ export const deleteFoodBeverage = asyncHandler(async (req, res) => {
     data: result,
     message: "Room food beverage deleted successfully",
   });
+});
+
+// Get all Amenity quantity
+export const getallCurrentMeeting = asyncHandler(async (req, res) => {
+  const result = await getallCurrentMeetingService();
+  return res
+    .status(201)
+    .json(new ApiResponse(200, { result }, "All meeting of current time retrieved Successfully"));
 });
