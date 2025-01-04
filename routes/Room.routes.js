@@ -23,9 +23,11 @@ import {
   editFoodBeverage,
   getAllMeeting,
   updateSanitationStatus,
+  getallCurrentMeeting,
 } from "../controllers/room.controller.js";
 import uploadRoomImage from "../middlewares/roomMulter.middleware.js";
 import multipleGalleryUpload from "../middlewares/galleryRoomMulter.middleware.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const roomRouter = express.Router();
 
@@ -40,7 +42,8 @@ roomRouter.route("/add-food-beverage").post(createFoodBeverage);
 roomRouter.route("/delete-food-beverage/:foodBeverageId").delete(deleteFoodBeverage);
 roomRouter.route("/all-meeting").get(getAllMeeting);
 roomRouter.route("/add-room").post(uploadRoomImage.single("roomImage"), createRoom);
-roomRouter.route("/all-rooms").get(getAllRooms);
+roomRouter.route("/all-rooms").get(verifyJWT,getAllRooms);
+roomRouter.route("/all-current-meeting").get(getallCurrentMeeting);
 roomRouter.route("/:roomId").get(getRoomById);
 
 roomRouter.route("/edit-room/:roomId").put(uploadRoomImage.single("roomImage"),updateRoom);
@@ -55,5 +58,7 @@ roomRouter.route("/single-room-gallery/:roomId").get(getSingleRoomController);
 roomRouter.route("/edit-amenity-quantity/:amenityQuantityId").put(editAmenityQuantity);
 roomRouter.route("/edit-food-beverage/:foodBeverageId").put(editFoodBeverage);
 roomRouter.route("/update-sanitation-status/:roomId").put(updateSanitationStatus);
+
+
 
 export default roomRouter;

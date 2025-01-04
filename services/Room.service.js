@@ -8,6 +8,8 @@ import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
 import RoomGallery from "../models/RoomGallery.models.js";
 import User from "../models/User.models.js";
 import { ApiError } from "../utils/ApiError.js";
+import { Op } from "sequelize";
+import moment from 'moment';
 
 export const getAllAmenitiesQuantityService = async (roomId) => {
   try {
@@ -335,6 +337,34 @@ export const getRoomByIdService = async (roomId) => {
     });
 
     return room;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+};
+
+export const getallCurrentMeetingService = async () => {
+
+  try {
+    const nowIST = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+    const allMeeting = await Meeting.findAll({
+      where: { 
+        meetingDate: {
+          [Op.eq]: nowIST.split(' ')[0], // Current date in YYYY-MM-DD format
+        },
+        startTime: {
+          [Op.lte]: nowIST, // Meeting starts before or at the current time
+        },
+        endTime: {
+          [Op.gte]: nowIST, // Meeting ends after or at the current time
+        },
+       },
+      order: [["createdAt", "DESC"]],
+
+    });
+
+   
+    return allMeeting;
   } catch (error) {
     console.log("error", error);
     throw error;

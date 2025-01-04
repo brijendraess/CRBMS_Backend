@@ -11,11 +11,8 @@ const multipleStorage = multer.diskStorage({
     // Ensure the directory exists or create it
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true }); // Recursively create the directory
-      console.log("Directory created:", dir);
-    } else {
-      console.log("Directory already exists:", dir);
-    }
-
+     // console.log("Directory created:", dir);
+    } 
     cb(null, dir); // Pass the directory path to Multer
   },
   filename: (req, file, cb) => {
