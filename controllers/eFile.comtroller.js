@@ -26,7 +26,6 @@ export const eFileController = asyncHandler(async (req, res) => {
         userName: data?.username,
         fullname: data?.fname,
         phoneNumber: data?.mobile,
-        isAdmin: false,
         avatarPath: data?.profile_image,
       });
     }

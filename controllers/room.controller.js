@@ -96,7 +96,7 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     filterCapacity,
   } = req.query;
 
-const user=req.user.isAdmin
+const user=req.user.UserType.isAdmin==='admin'
   // Checking the available time of the room
   const sanitationPeriod = 15;
   const tolerancePeriod = 15;

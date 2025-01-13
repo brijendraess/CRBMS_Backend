@@ -2,6 +2,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import User from "../models/User.models.js";
+import UserType from "../models/UserType.model.js";
 
 export const verifyJWT = asyncHandler(async (req, res, next) => {
   try {
@@ -15,6 +16,11 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     const user = await User.findByPk(decodedToken.id, {
       attributes: { exclude: ["password", "refreshToken"] },
+      include:[
+        {
+          model:UserType,
+        }
+      ]
     });
 
     if (!user) {

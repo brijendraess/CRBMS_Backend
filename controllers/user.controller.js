@@ -18,6 +18,7 @@ import path from "path";
 import CommitteeMember from "../models/CommitteeMember.models.js";
 import { sequelize } from "../database/database.js";
 import { generateMD5 } from "../utils/utils.js";
+import UserType from "../models/UserType.model.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -34,14 +35,13 @@ const registerUser = asyncHandler(async (req, res) => {
     userName,
     password,
     fullname,
-    role,
+    user_type,
     phoneNumber,
     committee, // May arrive as a string
   } = req.body;
-
   // Validation for required fields
   if (
-    [email, password, fullname, phoneNumber, role].some(
+    [email, password, fullname, phoneNumber, user_type].some(
       (field) => !field || field.trim() === ""
     )
   ) {
@@ -84,7 +84,7 @@ const registerUser = asyncHandler(async (req, res) => {
       password: hashedPassword,
       fullname,
       phoneNumber,
-      isAdmin: role,
+      user_type: user_type,
       avatarPath,
     });
 
@@ -178,8 +178,12 @@ const verifyOTPForLogin = asyncHandler(async (req, res) => {
 
   const loggedInUser = await User.findByPk(user.id, {
     attributes: { exclude: ["password", "refreshToken"] },
+    include:[
+      {
+        model:UserType
+      }
+    ]
   });
-
   return res
     .status(201)
     .cookie("accessToken", accessToken, options)
@@ -196,7 +200,12 @@ const sendOTPAgain = asyncHandler(async (req, res) => {
   }
 
   // Find user in the database
-  const user = await User.findOne({ where: { userName } });
+  const user = await User.findOne({ where: { userName },
+    include:[
+      {
+        model:UserType
+      }
+    ] });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -261,7 +270,7 @@ const getUserById = asyncHandler(async (req, res) => {
       u.email AS "email",
       u."phoneNumber" AS "phoneNumber",
       u."avatarPath",
-      u."isAdmin",
+      u."user_type",
       c.name AS "committeename"
     FROM 
       users u
@@ -291,7 +300,7 @@ const getUserById = asyncHandler(async (req, res) => {
       id: result[0].userId,
       fullname: result[0].fullname,
       email: result[0].email,
-      isAdmin: result[0].isAdmin,
+      user_type: result[0].user_type,
       phoneNumber: result[0].phoneNumber,
       avatarPath: result[0].avatarPath,
       committees: result
@@ -313,7 +322,13 @@ const getAllUsers = asyncHandler(async (req, res) => {
   // const { page = 1, limit = 10 } = req.query;
   // const offset = (parseInt(page) - 1) * parseInt(limit);
 
-  const loggedInUser = await User.findByPk(req.user.id);
+  const loggedInUser = await User.findByPk(req.user.id,{
+    include:[
+      {
+        model:UserType
+      }
+    ]
+  });
   if (!loggedInUser) {
     throw new ApiError(400, "Please Log In");
   }
@@ -324,6 +339,11 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
   const users = await User.findAndCountAll({
     attributes: { exclude: ["password", "refreshToken"] },
+    include:[
+      {
+        model:UserType,
+      }
+    ],
     order: [["createdAt", "DESC"]],
    // limit: parseInt(limit),
     //offset: parseInt(offset),
@@ -376,7 +396,7 @@ const updateMyProfile = asyncHandler(async (req, res) => {
 // Update User (Admin)
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { fullname, email, phoneNumber, isAdmin, committees } = req.body;
+  const { fullname, email, phoneNumber, user_type, committees } = req.body;
   const loggedInUser = await User.findByPk(req.user.id);
   if (!loggedInUser) {
     throw new ApiError(400, "Please log in");
@@ -390,7 +410,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  if (!loggedInUser.isAdmin && loggedInUser.id !== user.id) {
+  if (!loggedInUser.user_type && loggedInUser.id !== user.id) {
     throw new ApiError(
       403,
       "Access denied. Only admins can update other users' profiles."
@@ -401,7 +421,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   user.fullname = fullname || user.fullname;
   user.email = email || user.email;
   user.phoneNumber = phoneNumber || user.phoneNumber;
-  user.isAdmin = isAdmin || user.isAdmin;
+  user.user_type = user_type || user.user_type;
 
   await user.save();
 
