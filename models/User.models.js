@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
+import UserType from "./UserType.model.js";
 
 const User = sequelize.define(
   "User",
@@ -33,11 +34,7 @@ const User = sequelize.define(
       allowNull: true,
       unique: true,
     },
-    isAdmin: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
+    
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
@@ -104,5 +101,14 @@ const User = sequelize.define(
     paranoid: true,
   }
 );
+
+UserType.hasMany(User, {
+  foreignKey: {
+    name: "user_type", 
+    type: DataTypes.UUID, 
+  },
+  onDelete: "CASCADE",
+});
+User.belongsTo(UserType, { foreignKey: "user_type" });
 
 export default User;
