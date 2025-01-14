@@ -58,6 +58,14 @@ const UserType = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    meetingNotificationModule: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    servicesModule: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
