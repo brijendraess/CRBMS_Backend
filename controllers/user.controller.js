@@ -19,6 +19,9 @@ import CommitteeMember from "../models/CommitteeMember.models.js";
 import { sequelize } from "../database/database.js";
 import { generateMD5 } from "../utils/utils.js";
 import UserType from "../models/UserType.model.js";
+import UserServices from "../models/UserServices.models.js";
+import Committee from "../models/Committee.models.js";
+import Services from "../models/Services.models.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -38,6 +41,7 @@ const registerUser = asyncHandler(async (req, res) => {
     user_type,
     phoneNumber,
     committee, // May arrive as a string
+    services,
   } = req.body;
   // Validation for required fields
   if (
@@ -59,6 +63,17 @@ const registerUser = asyncHandler(async (req, res) => {
       "Invalid committee format. Must be a valid JSON array."
     );
   }
+
+  // Ensure services is parsed if it's sent as a string
+  let parsedServices = [];
+  try {
+    parsedServices = Array.isArray(services) ? services : JSON.parse(services);
+  } catch (error) {
+    throw new ApiError(
+      400,
+      "Invalid services format. Must be a valid JSON array."
+    );
+  }
   // Validate that the parsed committee is an array of strings
   if (
     !Array.isArray(parsedCommittee) ||
@@ -66,7 +81,13 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "Committee must be an array of string IDs");
   }
-
+  // Validate that the parsed services is an array of strings
+  if (
+    !Array.isArray(parsedServices) ||
+    parsedServices.some((id) => typeof id !== "string")
+  ) {
+    throw new ApiError(400, "services must be an array of string IDs");
+  }
   // Check if user already exists
   const existingUser = await User.findOne({ where: { userName } });
   if (existingUser) {
@@ -100,6 +121,18 @@ const registerUser = asyncHandler(async (req, res) => {
       await CommitteeMember.bulkCreate(committeeEntries, { validate: true });
     }
 
+    // Add the user to services if provided
+
+    if (parsedServices.length > 0) {
+      const servicesEntries = parsedServices.map((servicesId) => ({
+        servicesId,
+        userId: newUser.id,
+        status: true,
+      }));
+      await UserServices.sync(); // Ensure table exists
+      await UserServices.bulkCreate(servicesEntries, { validate: true });
+    }
+
     const createdUser = await User.findByPk(newUser.id, {
       attributes: { exclude: ["password", "refreshToken"] },
     });
@@ -129,18 +162,20 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { userName, password } = req.body;
 
-  if ([userName, password].some((field) => field?.trim() === ("" || undefined))) {
+  if (
+    [userName, password].some((field) => field?.trim() === ("" || undefined))
+  ) {
     throw new ApiError(400, "All Fields Are Required");
   }
 
-  const user = await User.findOne({ where: { userName} });
+  const user = await User.findOne({ where: { userName } });
 
   if (!user) {
     throw new ApiError(401, "User Not Found or not activated yet");
   }
-  let isPasswordValid =false
+  let isPasswordValid = false;
   if (user.password === generateMD5(password)) {
-  isPasswordValid = true;
+    isPasswordValid = true;
   }
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid Password");
@@ -178,11 +213,11 @@ const verifyOTPForLogin = asyncHandler(async (req, res) => {
 
   const loggedInUser = await User.findByPk(user.id, {
     attributes: { exclude: ["password", "refreshToken"] },
-    include:[
+    include: [
       {
-        model:UserType
-      }
-    ]
+        model: UserType,
+      },
+    ],
   });
   return res
     .status(201)
@@ -200,12 +235,14 @@ const sendOTPAgain = asyncHandler(async (req, res) => {
   }
 
   // Find user in the database
-  const user = await User.findOne({ where: { userName },
-    include:[
+  const user = await User.findOne({
+    where: { userName },
+    include: [
       {
-        model:UserType
-      }
-    ] });
+        model: UserType,
+      },
+    ],
+  });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -255,57 +292,56 @@ const getMyProfile = asyncHandler(async (req, res) => {
   }
 });
 
-// get user by id(For Admin)
+// get user by id
 const getUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-
   if (!id) {
     throw new ApiError(400, "Please provide a valid user ID");
   }
 
-  const usersQuery = `
-    SELECT 
-      u.id AS "userId",
-      u.fullname AS "fullname",
-      u.email AS "email",
-      u."phoneNumber" AS "phoneNumber",
-      u."avatarPath",
-      u."user_type",
-      c.name AS "committeename"
-    FROM 
-      users u
-    LEFT JOIN 
-      committee_members cm ON u.id = cm."userId"
-    LEFT JOIN 
-      committees c ON cm."committeeId" = c.id
-    WHERE 
-      u.id = :id
-  `;
-
   try {
-    const result = await sequelize.query(usersQuery, {
-      replacements: { id },
-      type: QueryTypes.SELECT,
+    const result = await User.findOne({
+      where: {
+        id: id, // Primary key condition
+      },
+      include: [
+        {
+          model: CommitteeMember,
+          include: [
+            {
+              model: Committee,
+            },
+          ],
+        },
+        {
+          model: UserType,
+        },
+        {
+          model: UserServices,
+          include: [
+            {
+              model: Services,
+            },
+          ],
+        },
+      ],
     });
-
-    if (!result.length) {
-      throw new ApiError(
-        404,
-        "User not found or not associated with any committees"
-      );
-    }
-
     // Process result to group committees
     const userData = {
-      id: result[0].userId,
-      fullname: result[0].fullname,
-      email: result[0].email,
-      user_type: result[0].user_type,
-      phoneNumber: result[0].phoneNumber,
-      avatarPath: result[0].avatarPath,
-      committees: result
-        .filter((row) => row.committeename) // Filter out rows with no committee
-        .map((row) => row.committeename), // Extract committee names
+      id: result.dataValues.id,
+      fullname: result.dataValues.fullname,
+      email: result.dataValues.email,
+      user_type: {id:result.dataValues.UserType.dataValues.id,label:result.dataValues.UserType.dataValues.userTypeName},
+      phoneNumber: result.dataValues.phoneNumber,
+      avatarPath: result.dataValues.avatarPath,
+      committees: result.dataValues.CommitteeMembers.filter(
+        (row) => row.dataValues.Committee.dataValues.name
+      ) // Filter out rows with no committee
+        .map((row) => row.dataValues.Committee.dataValues.name), // Extract committee names
+      services: result.dataValues.UserServices.filter(
+        (row) => row.dataValues.Service.dataValues.servicesName
+      ) // Filter out rows with no committee
+        .map((row) => row.dataValues.Service.dataValues.servicesName), // Extract committee names
     };
 
     return res
@@ -322,12 +358,12 @@ const getAllUsers = asyncHandler(async (req, res) => {
   // const { page = 1, limit = 10 } = req.query;
   // const offset = (parseInt(page) - 1) * parseInt(limit);
 
-  const loggedInUser = await User.findByPk(req.user.id,{
-    include:[
+  const loggedInUser = await User.findByPk(req.user.id, {
+    include: [
       {
-        model:UserType
-      }
-    ]
+        model: UserType,
+      },
+    ],
   });
   if (!loggedInUser) {
     throw new ApiError(400, "Please Log In");
@@ -339,13 +375,13 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
   const users = await User.findAndCountAll({
     attributes: { exclude: ["password", "refreshToken"] },
-    include:[
+    include: [
       {
-        model:UserType,
-      }
+        model: UserType,
+      },
     ],
     order: [["createdAt", "DESC"]],
-   // limit: parseInt(limit),
+    // limit: parseInt(limit),
     //offset: parseInt(offset),
     paranoid: false,
   });
@@ -396,7 +432,7 @@ const updateMyProfile = asyncHandler(async (req, res) => {
 // Update User (Admin)
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { fullname, email, phoneNumber, user_type, committees } = req.body;
+  const { fullname, email, phoneNumber, user_type, committees,services } = req.body;
   const loggedInUser = await User.findByPk(req.user.id);
   if (!loggedInUser) {
     throw new ApiError(400, "Please log in");
@@ -441,7 +477,6 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       console.error("Error renaming file:", error.message);
     }
     user.avatarPath = newAvatarPath;
-
   }
   await user.save();
 
@@ -481,6 +516,42 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       },
     });
   }
+
+// Synchronize services in the `user service` table
+const existingServicesIds = (
+  await UserServices.findAll({
+    where: { userId: id },
+    attributes: ["servicesId"],
+  })
+).map((cm) => cm.servicesId);
+
+const newServicesIds = services?.split(",");
+
+// Find services to add and remove
+const servicesToAdd = newServicesIds.filter(
+  (servicesId) => !existingServicesIds.includes(servicesId)
+);
+const servicesToRemove = existingServicesIds.filter(
+  (servicesId) => !newServicesIds.includes(servicesId)
+);
+// Add new services
+if (servicesToAdd.length > 0) {
+  const servicesRecordsToAdd = servicesToAdd.map((servicesId) => ({
+    userId: id,
+    servicesId,
+  }));
+  await UserServices.bulkCreate(servicesRecordsToAdd);
+}
+
+// Remove unselected services
+if (servicesToRemove.length > 0) {
+  await UserServices.destroy({
+    where: {
+      userId: id,
+      servicesId: servicesToRemove,
+    },
+  });
+}
 
   return res
     .status(200)
