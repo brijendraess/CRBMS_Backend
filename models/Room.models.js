@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/database.js";
 import Location from "./Location.model.js";
+import Services from "./Services.models.js";
 
 const Room = sequelize.define(
   "Room",
@@ -58,5 +59,14 @@ Location.hasOne(Room, {
   onDelete: "CASCADE",
 });
 Room.belongsTo(Location, { foreignKey: "location" });
+
+Services.hasOne(Room, {
+  foreignKey: {
+    name: "services", // Foreign key in RoomAmenityQuantity
+    type: DataTypes.UUID, // Ensure it's UUID if Room has UUID primary key
+  },
+  onDelete: "CASCADE",
+});
+Room.belongsTo(Services, { foreignKey: "services" });
 
 export default Room;

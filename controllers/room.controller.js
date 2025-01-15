@@ -27,12 +27,14 @@ import Meeting from "../models/Meeting.models.js";
 import RoomAmenity from "../models/RoomAmenity.model.js";
 import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
 import User from "../models/User.models.js";
+import Services from "../models/Services.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {
   const {
     name,
     description,
     location,
+    services,
     capacity,
     tolerancePeriod,
     sanitationStatus,
@@ -40,7 +42,7 @@ export const createRoom = asyncHandler(async (req, res) => {
     isAvailable,
   } = req.body;
 
-  if (!name || !location || !capacity) {
+  if (!name || !location || !capacity || !services) {
     throw new ApiError(400, "Please fill in all fields");
   }
 
@@ -60,6 +62,7 @@ export const createRoom = asyncHandler(async (req, res) => {
     name,
     description,
     location,
+    services,
     capacity,
     tolerancePeriod,
     sanitationPeriod,
@@ -172,6 +175,9 @@ const filterCapacityCalculated=filterCapacity?filterCapacity:1;
         model: Location,
       },
       {
+        model: Services,
+      },
+      {
         model: RoomGallery,
       },
       {
@@ -208,7 +214,10 @@ include:[
     include:[
       {
         model:Location
-      }
+      },
+      {
+        model: Services,
+      },
     ]
   },
   {
@@ -230,6 +239,7 @@ export const updateRoom = asyncHandler(async (req, res) => {
   const {
     name,
     location,
+    services,
     capacity,
     sanitationStatus,
     tolerancePeriod,
@@ -251,6 +261,7 @@ export const updateRoom = asyncHandler(async (req, res) => {
 
   room.name = name ?? room.name;
   room.location = location ?? room.location.id;
+  room.services = services ?? room.services.id;
   room.capacity = capacity ?? room.capacity;
   room.roomImagePath = roomImagePath ?? room.roomImagePath;
   room.sanitationStatus = sanitationStatus ?? room.sanitationStatus;
