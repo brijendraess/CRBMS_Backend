@@ -8,9 +8,7 @@ export const getAllActiveAmenityService = async () => {
             where: { status: true },
         });
         
-          if (!roomAmenities.length) {
-            throw new ApiError(404, "No amenity found");
-          }
+        
           return roomAmenities
     } catch (error) {
         console.log('error', error);
