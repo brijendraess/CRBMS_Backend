@@ -250,6 +250,9 @@ export const getAllAdminMeetings = asyncHandler(async (req, res) => {
     include: [
       {
         model: Room,
+        include: [
+          {model: Location}
+        ]
       },
       {
         model: User,
