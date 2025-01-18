@@ -14,6 +14,7 @@ export const createRoomAmenity = asyncHandler(async (req, res) => {
     name,
     description,
     quantity,
+    status:true
   });
 
   res

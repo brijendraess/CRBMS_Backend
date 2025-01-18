@@ -10,6 +10,7 @@ import User from "../models/User.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Op } from "sequelize";
 import moment from 'moment';
+import Services from "../models/Services.models.js";
 
 export const getAllAmenitiesQuantityService = async (roomId) => {
   try {
@@ -305,6 +306,9 @@ export const getRoomByIdService = async (roomId) => {
       include: [
         {
           model: Location,
+        },
+        {
+          model:Services,
         },
         {
           model: RoomGallery,

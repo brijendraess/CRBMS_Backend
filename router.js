@@ -13,6 +13,7 @@ import cronRouter from "./routes/cron.routes.js";
 import eFileRouter from "./routes/eFile.routes.js";
 import userTypeRouter from "./routes/UserType.routes.js";
 import servicesRouter from "./routes/Services.router.js";
+import stockRouter from "./routes/stock.routes.js";
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use("/api/v1/cron", cronRouter);
 router.use("/api/v1/e-file", eFileRouter);
 router.use("/api/v1/user-type", userTypeRouter);
 router.use("/api/v1/services", servicesRouter);
+router.use("/api/v1/stock", stockRouter);
 
 export default router;
