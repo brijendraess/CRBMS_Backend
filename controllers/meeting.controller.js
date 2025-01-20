@@ -402,37 +402,37 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   }
 
   // Checking the available time of the room
-  const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
-  const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
-  let newFormattedStartTime = new Date(startTime); // HH:mm:ss
-  const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
-  newFormattedStartTime.setMinutes(
-    newFormattedStartTime.getMinutes() - extraCalculatedTime
-  );
-  const newFormattedStartTimeChecked = newFormattedStartTime
-    .toTimeString()
-    .split(" ")[0];
+  // const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
+  // const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
+  // let newFormattedStartTime = new Date(startTime); // HH:mm:ss
+  // const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
+  // newFormattedStartTime.setMinutes(
+  //   newFormattedStartTime.getMinutes() - extraCalculatedTime
+  // );
+  // const newFormattedStartTimeChecked = newFormattedStartTime
+  //   .toTimeString()
+  //   .split(" ")[0];
 
-  // Convert startTime and endTime to TIME format
-  const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
-  const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
-  const overlappingMeeting = await Meeting.findOne({
-    where: {
-      roomId,
-      meetingDate: date,
-      startTime: { [Op.lt]: formattedEndTime },
-      endTime: { [Op.gt]: newFormattedStartTimeChecked },
-    },
-  });
+  // // Convert startTime and endTime to TIME format
+  // const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  // const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  // const overlappingMeeting = await Meeting.findOne({
+  //   where: {
+  //     roomId,
+  //     meetingDate: date,
+  //     startTime: { [Op.lt]: formattedEndTime },
+  //     endTime: { [Op.gt]: newFormattedStartTimeChecked },
+  //   },
+  // });
 
-  if (overlappingMeeting) {
-    throw new ApiError(400, "Room is already booked for the selected time");
-  }
+  // if (overlappingMeeting) {
+  //   throw new ApiError(400, "Room is already booked for the selected time");
+  // }
   // Update fields
   meeting.subject = subject || meeting.subject;
   meeting.notes = notes || meeting.notes;
-  meeting.startTime = formattedStartTime || meeting.startTime;
-  meeting.endTime = formattedEndTime || meeting.endTime;
+  meeting.startTime =  meeting.startTime;
+  meeting.endTime = meeting.endTime;
   meeting.roomId = roomId || meeting.roomId;
   meeting.organizerId = organizerId || meeting.organizerId;
   meeting.attendees = attendees || meeting.attendees;
