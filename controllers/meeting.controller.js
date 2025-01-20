@@ -31,7 +31,11 @@ import {
   updateEventMeetingData,
 } from "../utils/ics.js";
 import {
+  sendSmsCancelHelper,
+  sendSmsCompleteHelper,
+  sendSmsEditedHelper,
   sendSmsPostponeHelper,
+  sendSmsScheduledHelper,
   sendSmsToAdminForApproveHelper,
 } from "../helpers/sendSMS.helper.js";
 import { formatTimeShort, getFormattedDate } from "../utils/utils.js";
@@ -602,6 +606,13 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         emailTemplateValuesSet
       );
       // End of Email sending section
+
+      // Send SMS to all user
+      const templateValue = {
+        name: members?.dataValues?.fullname
+      };
+      sendSmsEditedHelper(members?.dataValues?.phoneNumber, templateValue);
+      // End of the SMS section
     });
 
   // Notifications will be done here for all committee user
@@ -641,6 +652,13 @@ export const updateMeeting = asyncHandler(async (req, res) => {
             emailTemplateValuesSet
           );
           // End of Email sending section
+
+          // Send SMS to all user
+          const templateValue = {
+            name: member?.dataValues?.fullname
+          };
+          sendSmsEditedHelper(member?.dataValues?.phoneNumber, templateValue);
+          // End of the SMS section
         });
     });
 
@@ -951,18 +969,6 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
       );
       // End of Email sending section
 
-       // Send SMS to all user
-          const templateValue = {
-            name: member?.dataValues?.User?.dataValues?.fullname,
-            date: getFormattedDate(meeting?.meetingDate),
-            startTime: formatTimeShort(meeting?.startTime),
-            startTime: formatTimeShort(meeting?.endTime),
-          };
-          sendSmsPostponeHelper(
-            member?.dataValues?.User?.dataValues?.phoneNumber,
-            templateValue
-          );
-          // End of the SMS section
     });
   res
     .status(200)
@@ -1114,6 +1120,41 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
           meetingStatus
         );
         // End of Email sending section
+
+        if(meetingStatus === "cancelled"){
+          // Send SMS to all user
+          const templateValue = {
+            name: members?.dataValues?.fullname,
+            date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
+            startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
+            startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+          };
+          sendSmsCancelHelper(members?.dataValues?.phoneNumber, templateValue);
+          // End of the SMS section
+        }
+
+        if(meetingStatus === "scheduled"){
+          // Send SMS to all user
+          const templateValue = {
+            name: members?.dataValues?.fullname,
+            date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
+            startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
+            startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+          };
+          sendSmsScheduledHelper(members?.dataValues?.phoneNumber, templateValue);
+          // End of the SMS section
+        }
+
+        if(meetingStatus === "completed"){
+          // Send SMS to all user
+          const templateValue = {
+            name: members?.dataValues?.fullname
+          };
+          sendSmsCompleteHelper(members?.dataValues?.phoneNumber, templateValue);
+          // End of the SMS section
+        }
+        
+
       });
 
     // Notifications will be done here for all committee user
@@ -1151,6 +1192,46 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
               meetingStatus
             );
             // End of Email sending section
+
+            if(meetingStatus === "cancelled"){
+              // Send SMS to all user
+              const templateValue = {
+                name: member?.dataValues?.User?.dataValues?.fullname,
+                date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
+                startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
+                startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+              };
+              sendSmsCancelHelper(
+                member?.dataValues?.User?.dataValues?.phoneNumber,
+                templateValue
+              );
+            // End of the SMS section
+            }
+
+            if(meetingStatus === "scheduled"){
+              // Send SMS to all user
+              const templateValue = {
+                name: member?.dataValues?.User?.dataValues?.fullname,
+                date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
+                startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
+                startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+              };
+              sendSmsScheduledHelper(
+                member?.dataValues?.User?.dataValues?.phoneNumber,
+                templateValue
+              );
+            // End of the SMS section
+            }
+
+            if(meetingStatus === "completed"){
+              // Send SMS to all user
+              const templateValue = {
+                name: member?.dataValues?.fullname
+              };
+              sendSmsCompleteHelper(member?.dataValues?.phoneNumber, templateValue);
+              // End of the SMS section
+            }
+            
           });
       });
 
@@ -1169,7 +1250,7 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
           emailTemplateValuesSet,
           meetingStatus
         );
-        // End of Email sending section
+        // End of Email sending section      
       });
   });
 
