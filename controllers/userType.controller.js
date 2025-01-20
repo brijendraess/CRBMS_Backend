@@ -21,7 +21,6 @@ export const singleUserTypeDetail = asyncHandler(async (req, res) => {
 
 // Getting all user Type
 export const allUserTypeDetail = asyncHandler(async (req, res) => {
-
   const result = await allUserTypeDetailService();
   return res
     .status(200)
@@ -43,17 +42,21 @@ export const changeStatusUserTypeDetail = asyncHandler(async (req, res) => {
   const result = await changeStatusUserTypeDetailService(id);
   return res
     .status(200)
-    .json(new ApiResponse(200, { result }, "user type status changed successfully"));
+    .json(
+      new ApiResponse(200, { result }, "user type status changed successfully")
+    );
 });
-
 
 // Getting all user Type
 export const editUserTypeDetail = asyncHandler(async (req, res) => {
   const { userTypeId } = req.params;
-  const {  userTypeName,
+  const {
+    userTypeName,
     calendarModule,
     userModule,
     committeeModule,
+    notificationModule,
+    inventoryModule,
     committeeMemberModule,
     amenitiesModule,
     roomModule,
@@ -63,10 +66,13 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     meetingLogsModule,
     userRoleModule,
   } = req.body;
-  const params={ userTypeName,
+  const params = {
+    userTypeName,
     calendarModule,
     userModule,
     committeeModule,
+    notificationModule,
+    inventoryModule,
     committeeMemberModule,
     amenitiesModule,
     roomModule,
@@ -75,7 +81,8 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     reportModule,
     meetingLogsModule,
     userRoleModule,
-    userTypeId}
+    userTypeId,
+  };
   const result = await editUserTypeDetailService(params);
   return res
     .status(200)
@@ -88,6 +95,8 @@ export const addUserType = asyncHandler(async (req, res) => {
     calendarModule,
     userModule,
     committeeModule,
+    notificationModule,
+    inventoryModule,
     committeeMemberModule,
     amenitiesModule,
     roomModule,
@@ -106,6 +115,8 @@ export const addUserType = asyncHandler(async (req, res) => {
     calendarModule,
     userModule,
     committeeModule,
+    notificationModule,
+    inventoryModule,
     committeeMemberModule,
     amenitiesModule,
     roomModule,
@@ -125,9 +136,14 @@ export const addUserType = asyncHandler(async (req, res) => {
 
 // Getting all user Type
 export const activeUserTypeDetail = asyncHandler(async (req, res) => {
-
   const result = await activeUserTypeDetailService();
   return res
     .status(200)
-    .json(new ApiResponse(200, { result }, "active user type retrieved successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { result },
+        "active user type retrieved successfully"
+      )
+    );
 });
