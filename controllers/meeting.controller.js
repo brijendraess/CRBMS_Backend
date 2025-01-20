@@ -19,8 +19,22 @@ import {
   roomBookingUpdateEmail,
 } from "../nodemailer/roomEmail.js";
 import { getRoomByIdService } from "../services/Room.service.js";
-import { getUserByIdService } from "../services/User.service.js";
-import { cancelledEventMeetingData, eventMeetingData, formatDateToICS, postponeEventMeetingData, updateEventMeetingData } from "../utils/ics.js";
+import {
+  getAllAdminUser,
+  getUserByIdService,
+} from "../services/User.service.js";
+import {
+  cancelledEventMeetingData,
+  eventMeetingData,
+  formatDateToICS,
+  postponeEventMeetingData,
+  updateEventMeetingData,
+} from "../utils/ics.js";
+import {
+  sendSmsPostponeHelper,
+  sendSmsToAdminForApproveHelper,
+} from "../helpers/sendSMS.helper.js";
+import { formatTimeShort, getFormattedDate } from "../utils/utils.js";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
@@ -113,6 +127,19 @@ export const addMeeting = asyncHandler(async (req, res) => {
   // Bulk insert into MeetingCommittee
   await MeetingCommittee.bulkCreate(committeesArray);
 
+  // Send SMS to admin to approve the meeting
+  const adminUser = await getAllAdminUser();
+  adminUser.map((item) => {
+    const templateValue = {
+      name: item?.fullname,
+      date: getFormattedDate(item?.meetingDate),
+      startTime: formatTimeShort(item?.startTime),
+      startTime: formatTimeShort(item?.endTime),
+    };
+    sendSmsToAdminForApproveHelper(item?.phoneNumber, templateValue);
+  });
+  // End of the SMS section
+
   // Fetch the data for email
   const rooms = await getRoomByIdService(roomId);
   const organizer = await getUserByIdService(organizerId);
@@ -127,7 +154,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
     location: rooms[0]?.dataValues?.Location?.locationName,
     organizerName: organizer[0]?.dataValues?.fullname,
   };
-  
+
   // Notifications will be done here
   attendees &&
     attendees.forEach(async (attendee) => {
@@ -250,9 +277,7 @@ export const getAllAdminMeetings = asyncHandler(async (req, res) => {
     include: [
       {
         model: Room,
-        include: [
-          {model: Location}
-        ]
+        include: [{ model: Location }],
       },
       {
         model: User,
@@ -628,7 +653,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: recipientName,
       };
-      await roomBookingUpdateEmail(eventDetails,quest, emailTemplateValuesSet);
+      await roomBookingUpdateEmail(eventDetails, quest, emailTemplateValuesSet);
       // End of Email sending section
     });
   res
@@ -811,7 +836,7 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     summary: meeting?.subject,
     description: meeting?.notes,
     location: rooms[0]?.dataValues?.Location?.locationName,
-    sequence:3,
+    sequence: 3,
     organizerName: organizer[0]?.dataValues?.fullname,
     organizerEmail: organizer[0]?.dataValues?.email,
   };
@@ -822,7 +847,7 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     attendees.forEach(async (attendee) => {
       const members = await User.findOne({
         where: { id: attendee },
-        attributes: ["id", "email", "fullname"],
+        attributes: ["id", "email", "fullname", "phoneNumber"],
       });
 
       // Header notification section
@@ -845,6 +870,16 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
         emailTemplateValuesSet
       );
       // End of Email sending section
+
+      // Send SMS to all user
+      const templateValue = {
+        name: members?.dataValues?.fullname,
+        date: getFormattedDate(meeting?.meetingDate),
+        startTime: formatTimeShort(meeting?.startTime),
+        startTime: formatTimeShort(meeting?.endTime),
+      };
+      sendSmsPostponeHelper(members?.dataValues?.phoneNumber, templateValue);
+      // End of the SMS section
     });
 
   // Notifications will be done here for all committee user
@@ -884,6 +919,19 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
             emailTemplateValuesSet
           );
           // End of Email sending section
+
+          // Send SMS to all user
+          const templateValue = {
+            name: member?.dataValues?.User?.dataValues?.fullname,
+            date: getFormattedDate(meeting?.meetingDate),
+            startTime: formatTimeShort(meeting?.startTime),
+            startTime: formatTimeShort(meeting?.endTime),
+          };
+          sendSmsPostponeHelper(
+            member?.dataValues?.User?.dataValues?.phoneNumber,
+            templateValue
+          );
+          // End of the SMS section
         });
     });
 
@@ -896,8 +944,25 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
         ...emailTemplateValues,
         recipientName: recipientName,
       };
-      await roomBookingPostponeEmail(eventDetails,quest, emailTemplateValuesSet);
+      await roomBookingPostponeEmail(
+        eventDetails,
+        quest,
+        emailTemplateValuesSet
+      );
       // End of Email sending section
+
+       // Send SMS to all user
+          const templateValue = {
+            name: member?.dataValues?.User?.dataValues?.fullname,
+            date: getFormattedDate(meeting?.meetingDate),
+            startTime: formatTimeShort(meeting?.startTime),
+            startTime: formatTimeShort(meeting?.endTime),
+          };
+          sendSmsPostponeHelper(
+            member?.dataValues?.User?.dataValues?.phoneNumber,
+            templateValue
+          );
+          // End of the SMS section
     });
   res
     .status(200)
@@ -990,37 +1055,37 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
       location: rooms[0]?.dataValues?.Location?.locationName,
       organizerName: organizer[0]?.dataValues?.fullname,
     };
-let eventData='';
-let eventDetails='';
+    let eventData = "";
+    let eventDetails = "";
 
-if(meetingStatus==='cancelled'){
-     eventData = {
-      uid: meeting[0]?.dataValues?.id,
-      meetingDate: meeting[0]?.dataValues?.meetingDate,
-      startTime: meeting[0]?.dataValues?.startTime,
-      endTime: meeting[0]?.dataValues?.endTime,
-      summary: meeting[0]?.dataValues?.subject,
-      description: meeting[0]?.dataValues?.notes,
-      location: rooms[0]?.dataValues?.Location?.locationName,
-      sequence:4,
-      organizerName: organizer[0]?.dataValues?.fullname,
-      organizerEmail: organizer[0]?.dataValues?.email,
-    };
-     eventDetails = cancelledEventMeetingData(eventData);
-  }else if (meetingStatus==='scheduled'){
-    const eventData = {
-      uid: meeting[0]?.dataValues?.id,
-      meetingDate: meeting[0]?.dataValues?.meetingDate,
-      startTime: meeting[0]?.dataValues?.startTime,
-      endTime: meeting[0]?.dataValues?.endTime,
-      summary: meeting[0]?.dataValues?.subject,
-      description: meeting[0]?.dataValues?.notes,
-      location: rooms[0]?.dataValues?.Location?.locationName,
-      organizerName: organizer[0]?.dataValues?.fullname,
-      organizerEmail: organizer[0]?.dataValues?.email,
-    };
-    eventDetails = eventMeetingData(eventData);
-  }
+    if (meetingStatus === "cancelled") {
+      eventData = {
+        uid: meeting[0]?.dataValues?.id,
+        meetingDate: meeting[0]?.dataValues?.meetingDate,
+        startTime: meeting[0]?.dataValues?.startTime,
+        endTime: meeting[0]?.dataValues?.endTime,
+        summary: meeting[0]?.dataValues?.subject,
+        description: meeting[0]?.dataValues?.notes,
+        location: rooms[0]?.dataValues?.Location?.locationName,
+        sequence: 4,
+        organizerName: organizer[0]?.dataValues?.fullname,
+        organizerEmail: organizer[0]?.dataValues?.email,
+      };
+      eventDetails = cancelledEventMeetingData(eventData);
+    } else if (meetingStatus === "scheduled") {
+      const eventData = {
+        uid: meeting[0]?.dataValues?.id,
+        meetingDate: meeting[0]?.dataValues?.meetingDate,
+        startTime: meeting[0]?.dataValues?.startTime,
+        endTime: meeting[0]?.dataValues?.endTime,
+        summary: meeting[0]?.dataValues?.subject,
+        description: meeting[0]?.dataValues?.notes,
+        location: rooms[0]?.dataValues?.Location?.locationName,
+        organizerName: organizer[0]?.dataValues?.fullname,
+        organizerEmail: organizer[0]?.dataValues?.email,
+      };
+      eventDetails = eventMeetingData(eventData);
+    }
     // Notifications will be done here
     attendees &&
       attendees.forEach(async (attendee) => {

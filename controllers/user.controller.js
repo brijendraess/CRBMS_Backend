@@ -12,16 +12,16 @@ import {
   sendPasswordResetEmail,
   sendResetSuccessEmail,
 } from "../nodemailer/email.js";
-import { Op, QueryTypes } from "sequelize";
+import { Op } from "sequelize";
 import fs from "fs";
 import path from "path";
 import CommitteeMember from "../models/CommitteeMember.models.js";
-import { sequelize } from "../database/database.js";
 import { generateMD5 } from "../utils/utils.js";
 import UserType from "../models/UserType.model.js";
 import UserServices from "../models/UserServices.models.js";
 import Committee from "../models/Committee.models.js";
 import Services from "../models/Services.models.js";
+import { sendSmsOTPHelper } from "../helpers/sendSMS.helper.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -192,6 +192,15 @@ const loginUser = asyncHandler(async (req, res) => {
   user.otpExpiresAt = new Date(Date.now() + 0.5 * 60 * 60 * 1000);
   await user.save();
 
+  // Send SMS
+  const templateValue = {
+    name: user.fullname,
+    otp: OTP,
+    expired: 30,
+  };
+sendSmsOTPHelper(user?.phoneNumber,templateValue)
+  // End of the SMS section
+
   await sendOTP(user.email, OTP);
   console.log("OTP : ", OTP);
   return res
@@ -331,7 +340,10 @@ const getUserById = asyncHandler(async (req, res) => {
       id: result.dataValues.id,
       fullname: result.dataValues.fullname,
       email: result.dataValues.email,
-      user_type: {id:result.dataValues.UserType.dataValues.id,label:result.dataValues.UserType.dataValues.userTypeName},
+      user_type: {
+        id: result.dataValues.UserType.dataValues.id,
+        label: result.dataValues.UserType.dataValues.userTypeName,
+      },
       phoneNumber: result.dataValues.phoneNumber,
       avatarPath: result.dataValues.avatarPath,
       committees: result.dataValues.CommitteeMembers.filter(
@@ -432,7 +444,8 @@ const updateMyProfile = asyncHandler(async (req, res) => {
 // Update User (Admin)
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { fullname, email, phoneNumber, user_type, committees,services } = req.body;
+  const { fullname, email, phoneNumber, user_type, committees, services } =
+    req.body;
   const loggedInUser = await User.findByPk(req.user.id);
   if (!loggedInUser) {
     throw new ApiError(400, "Please log in");
@@ -517,41 +530,41 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     });
   }
 
-// Synchronize services in the `user service` table
-const existingServicesIds = (
-  await UserServices.findAll({
-    where: { userId: id },
-    attributes: ["servicesId"],
-  })
-).map((cm) => cm.servicesId);
+  // Synchronize services in the `user service` table
+  const existingServicesIds = (
+    await UserServices.findAll({
+      where: { userId: id },
+      attributes: ["servicesId"],
+    })
+  ).map((cm) => cm.servicesId);
 
-const newServicesIds = services?.split(",");
+  const newServicesIds = services?.split(",");
 
-// Find services to add and remove
-const servicesToAdd = newServicesIds.filter(
-  (servicesId) => !existingServicesIds.includes(servicesId)
-);
-const servicesToRemove = existingServicesIds.filter(
-  (servicesId) => !newServicesIds.includes(servicesId)
-);
-// Add new services
-if (servicesToAdd.length > 0) {
-  const servicesRecordsToAdd = servicesToAdd.map((servicesId) => ({
-    userId: id,
-    servicesId,
-  }));
-  await UserServices.bulkCreate(servicesRecordsToAdd);
-}
-
-// Remove unselected services
-if (servicesToRemove.length > 0) {
-  await UserServices.destroy({
-    where: {
+  // Find services to add and remove
+  const servicesToAdd = newServicesIds.filter(
+    (servicesId) => !existingServicesIds.includes(servicesId)
+  );
+  const servicesToRemove = existingServicesIds.filter(
+    (servicesId) => !newServicesIds.includes(servicesId)
+  );
+  // Add new services
+  if (servicesToAdd.length > 0) {
+    const servicesRecordsToAdd = servicesToAdd.map((servicesId) => ({
       userId: id,
-      servicesId: servicesToRemove,
-    },
-  });
-}
+      servicesId,
+    }));
+    await UserServices.bulkCreate(servicesRecordsToAdd);
+  }
+
+  // Remove unselected services
+  if (servicesToRemove.length > 0) {
+    await UserServices.destroy({
+      where: {
+        userId: id,
+        servicesId: servicesToRemove,
+      },
+    });
+  }
 
   return res
     .status(200)
