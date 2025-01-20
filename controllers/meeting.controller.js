@@ -427,44 +427,44 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   }
 
   // Checking the available time of the room
-  const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
-  const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
-  let newFormattedStartTime = new Date(startTime); // HH:mm:ss
-  const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
-  newFormattedStartTime.setMinutes(
-    newFormattedStartTime.getMinutes() - extraCalculatedTime
-  );
-  const newFormattedStartTimeChecked = newFormattedStartTime
-    .toTimeString()
-    .split(" ")[0];
+  // const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
+  // const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
+  // let newFormattedStartTime = new Date(startTime); // HH:mm:ss
+  // const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
+  // newFormattedStartTime.setMinutes(
+  //   newFormattedStartTime.getMinutes() - extraCalculatedTime
+  // );
+  // const newFormattedStartTimeChecked = newFormattedStartTime
+  //   .toTimeString()
+  //   .split(" ")[0];
 
-  // Convert startTime and endTime to TIME format
-  const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
-  const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
-  const overlappingMeeting = await Meeting.findOne({
-    where: {
-      roomId,
-      meetingDate: date,
-      startTime: { [Op.lt]: formattedEndTime },
-      endTime: { [Op.gt]: newFormattedStartTimeChecked },
-    },
-  });
+  // // Convert startTime and endTime to TIME format
+  // const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  // const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
+  // const overlappingMeeting = await Meeting.findOne({
+  //   where: {
+  //     roomId,
+  //     meetingDate: date,
+  //     startTime: { [Op.lt]: formattedEndTime },
+  //     endTime: { [Op.gt]: newFormattedStartTimeChecked },
+  //   },
+  // });
 
-  if (overlappingMeeting) {
-    throw new ApiError(400, "Room is already booked for the selected time");
-  }
+  // if (overlappingMeeting) {
+  //   throw new ApiError(400, "Room is already booked for the selected time");
+  // }
   // Update fields
   meeting.subject = subject || meeting.subject;
   meeting.notes = notes || meeting.notes;
-  meeting.startTime = formattedStartTime || meeting.startTime;
-  meeting.endTime = formattedEndTime || meeting.endTime;
+  // meeting.startTime =  meeting.startTime;
+  // meeting.endTime = meeting.endTime;
   meeting.roomId = roomId || meeting.roomId;
   meeting.organizerId = organizerId || meeting.organizerId;
   meeting.attendees = attendees || meeting.attendees;
 
   meeting.agenda = agenda || meeting.agenda;
-  meeting.guestUser = guestUser || meeting.guestUser;
-  meeting.date = attendees || meeting.date;
+  meeting.guestUser = guestUser;
+  // meeting.date = attendees || meeting.date;
 
   meeting.committees = committees || meeting.committees;
   meeting.additionalEquipment =
@@ -667,17 +667,17 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
   const {
     roomId,
     organizerId,
-    subject,
-    agenda,
+    // subject,
+    // agenda,
     guestUser,
     startTime,
     endTime,
     date,
     attendees,
     committees,
-    notes,
-    additionalEquipment,
-    isPrivate,
+    // notes,
+    // additionalEquipment,
+    // isPrivate,
   } = req.body;
 
   const meeting = await Meeting.findByPk(meetingId);
@@ -718,100 +718,100 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Room is already booked for the selected time");
   }
   // Update fields
-  meeting.subject = subject || meeting.subject;
-  meeting.notes = notes || meeting.notes;
+  // meeting.subject = subject || meeting.subject;
+  // meeting.notes = notes || meeting.notes;
   meeting.startTime = formattedStartTime || meeting.startTime;
   meeting.endTime = formattedEndTime || meeting.endTime;
   meeting.roomId = roomId || meeting.roomId;
-  meeting.organizerId = organizerId || meeting.organizerId;
+  // meeting.organizerId = organizerId || meeting.organizerId;
   meeting.attendees = attendees || meeting.attendees;
 
-  meeting.agenda = agenda || meeting.agenda;
+  // meeting.agenda = agenda || meeting.agenda;
   meeting.guestUser = guestUser || meeting.guestUser;
-  meeting.date = attendees || meeting.date;
+  meeting.meetingDate = date || meeting.date;
 
   meeting.committees = committees || meeting.committees;
-  meeting.additionalEquipment =
-    additionalEquipment || meeting.additionalEquipment;
-  meeting.isPrivate = isPrivate || meeting.isPrivate;
+  // meeting.additionalEquipment =
+  //   additionalEquipment || meeting.additionalEquipment;
+  // meeting.isPrivate = isPrivate || meeting.isPrivate;
 
   await meeting.save();
 
-  const attendeesArray = attendees.map((userId) => ({
-    MeetingId: meetingId,
-    UserId: userId,
-  }));
-  const committeesArray = committees.map((committee) => ({
-    MeetingId: meetingId,
-    CommitteeId: committee,
-  }));
+  // const attendeesArray = attendees.map((userId) => ({
+  //   MeetingId: meetingId,
+  //   UserId: userId,
+  // }));
+  // const committeesArray = committees.map((committee) => ({
+  //   MeetingId: meetingId,
+  //   CommitteeId: committee,
+  // }));
 
   // Bulk insert into MeetingUser
 
   // Step 1: Find current entries for the meeting
-  const currentEntries = await MeetingUser.findAll({
-    where: { MeetingId: meetingId },
-    attributes: ["UserId"],
-  });
+  // const currentEntries = await MeetingUser.findAll({
+  //   where: { MeetingId: meetingId },
+  //   attributes: ["UserId"],
+  // });
 
   // Step 2: Extract existing UserIds
-  const existingUserIds = currentEntries.map((entry) => entry.UserId);
+  // const existingUserIds = currentEntries.map((entry) => entry.UserId);
 
   // Step 3: Determine UserIds to remove
-  const newUserIds = attendeesArray.map((attendee) => attendee.UserId);
-  const userIdsToRemove = existingUserIds.filter(
-    (userId) => !newUserIds.includes(userId)
-  );
+  // const newUserIds = attendeesArray.map((attendee) => attendee.UserId);
+  // const userIdsToRemove = existingUserIds.filter(
+  //   (userId) => !newUserIds.includes(userId)
+  // );
 
   // Step 4: Remove unneeded entries
-  if (userIdsToRemove.length > 0) {
-    await MeetingUser.destroy({
-      where: {
-        MeetingId: meetingId,
-        UserId: userIdsToRemove,
-      },
-    });
-  }
+  // if (userIdsToRemove.length > 0) {
+  //   await MeetingUser.destroy({
+  //     where: {
+  //       MeetingId: meetingId,
+  //       UserId: userIdsToRemove,
+  //     },
+  //   });
+  // }
 
   // Step 5: Bulk upsert remaining entries
-  await MeetingUser.bulkCreate(attendeesArray, {
-    updateOnDuplicate: ["UserId", "MeetingId"], // Fields to update
-  });
+  // await MeetingUser.bulkCreate(attendeesArray, {
+  //   updateOnDuplicate: ["UserId", "MeetingId"], // Fields to update
+  // });
 
   // Bulk insert into MeetingCommittee
   // Step 1: Fetch current entries
-  const currentEntriesCommittee = await MeetingCommittee.findAll({
-    where: { MeetingId: meetingId },
-    attributes: ["CommitteeId"],
-  });
+  // const currentEntriesCommittee = await MeetingCommittee.findAll({
+  //   where: { MeetingId: meetingId },
+  //   attributes: ["CommitteeId"],
+  // });
 
   // Step 2: Extract existing CommitteeIds
-  const existingCommitteeIds = currentEntriesCommittee.map(
-    (entry) => entry.CommitteeId
-  );
+  // const existingCommitteeIds = currentEntriesCommittee.map(
+  //   (entry) => entry.CommitteeId
+  // );
 
   // Step 3: Determine CommitteeIds to remove
-  const newCommitteeIds = committeesArray.map(
-    (committee) => committee.CommitteeId
-  );
-  const committeeIdsToRemove = existingCommitteeIds.filter(
-    (id) => !newCommitteeIds.includes(id)
-  );
+  // const newCommitteeIds = committeesArray.map(
+  //   (committee) => committee.CommitteeId
+  // );
+  // const committeeIdsToRemove = existingCommitteeIds.filter(
+  //   (id) => !newCommitteeIds.includes(id)
+  // );
 
   // Step 4: Remove unneeded entries
-  if (committeeIdsToRemove.length > 0) {
-    await MeetingCommittee.destroy({
-      where: {
-        MeetingId: meetingId,
-        CommitteeId: committeeIdsToRemove,
-      },
-    });
-  }
+  // if (committeeIdsToRemove.length > 0) {
+  //   await MeetingCommittee.destroy({
+  //     where: {
+  //       MeetingId: meetingId,
+  //       CommitteeId: committeeIdsToRemove,
+  //     },
+  //   });
+  // }
 
   // Step 5: Perform bulk upsert
-  await MeetingCommittee.bulkCreate(committeesArray, {
-    updateOnDuplicate: ["CommitteeId", "MeetingId"], // Fields to update on conflict
-  });
+  // await MeetingCommittee.bulkCreate(committeesArray, {
+  //   updateOnDuplicate: ["CommitteeId", "MeetingId"], // Fields to update on conflict
+  // });
 
   // Fetch the data for email
   const rooms = await getRoomByIdService(roomId);
