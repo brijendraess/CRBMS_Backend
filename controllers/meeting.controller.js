@@ -36,6 +36,7 @@ import {
   sendSmsEditedHelper,
   sendSmsPostponeHelper,
   sendSmsScheduledHelper,
+  sendSmsStartHelper,
   sendSmsToAdminForApproveHelper,
 } from "../helpers/sendSMS.helper.js";
 import { formatTimeShort, getFormattedDate } from "../utils/utils.js";
@@ -1153,6 +1154,15 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
           sendSmsCompleteHelper(members?.dataValues?.phoneNumber, templateValue);
           // End of the SMS section
         }
+
+        if(meetingStatus === "start"){
+          // Send SMS to all user
+          const templateValue = {
+            name: members?.dataValues?.fullname
+          };
+          sendSmsStartHelper(members?.dataValues?.phoneNumber, templateValue);
+          // End of the SMS section
+        }
         
 
       });
@@ -1229,6 +1239,15 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
                 name: member?.dataValues?.fullname
               };
               sendSmsCompleteHelper(member?.dataValues?.phoneNumber, templateValue);
+              // End of the SMS section
+            }
+
+            if(meetingStatus === "start"){
+              // Send SMS to all user
+              const templateValue = {
+                name: member?.dataValues?.fullname
+              };
+              sendSmsStartHelper(member?.dataValues?.phoneNumber, templateValue);
               // End of the SMS section
             }
             

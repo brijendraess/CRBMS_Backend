@@ -17,7 +17,10 @@ export const SEND_SMS_EDITED_TEMPLATE=`Hi {name}, just letting you know that the
 
 export const SEND_SMS_SCHEDULED_TEMPLATE=`Hi {name}, just a reminder about our meeting scheduled for {date} and {startTime}-{endTime}. Looking forward to catching up!`
 
-export const SEND_SMS_START_TEMPLATE=`Hi {name}, just a heads-up that our meeting is starting in 30 minutes. See you soon!`
+export const SEND_SMS_START_TEMPLATE=`Hi {name}, the meeting has just started. Join us when you're ready!`
+
+export const SEND_SMS_30_MIN_BEFORE_START = `Hi {name}, just a heads-up that our meeting is starting in 30 minutes. See you soon!`
+
 
 export const SEND_SMS_COMPLETE_TEMPLATE=`Hi {name}, thanks for taking the time to meet today. It was great catching up! Let me know if there’s anything else we need to follow up on.`
 
