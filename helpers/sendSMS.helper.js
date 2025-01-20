@@ -1,4 +1,5 @@
 import {
+  SEND_SMS_30_MIN_BEFORE_START,
   SEND_SMS_CANCEL_TEMPLATE,
   SEND_SMS_COMPLETE_TEMPLATE,
   SEND_SMS_EDITED_TEMPLATE,
@@ -46,6 +47,15 @@ const sendSmsCancelHelper = (to, templateValue) => {
   const toNumber = formatPhoneNumber(process.env.TWILIO_REGISTERED_NUMBER_TO);
   sendSMS(toNumber, message);
 };
+
+// meeting start before 30 mins
+const sendSms30MinBefore = (to, templateValue) => {
+  const message = replacePlaceholders(SEND_SMS_30_MIN_BEFORE_START, templateValue);
+  //const toNumber = formatPhoneNumber(to);
+  const toNumber = formatPhoneNumber(process.env.TWILIO_REGISTERED_NUMBER_TO);
+  sendSMS(toNumber, message);
+};
+
 // meeting Edit
 const sendSmsEditedHelper = (to, templateValue) => {
   const message = replacePlaceholders(SEND_SMS_EDITED_TEMPLATE, templateValue);
@@ -91,4 +101,5 @@ export {
   sendSmsScheduledHelper,
   sendSmsStartHelper,
   sendSmsCompleteHelper,
+  sendSms30MinBefore
 };
