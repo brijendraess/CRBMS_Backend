@@ -66,6 +66,14 @@ const UserType = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    notificationModule: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    inventoryModule: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

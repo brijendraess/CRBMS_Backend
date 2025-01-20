@@ -95,6 +95,8 @@ export const editUserTypeDetailService = async (params) => {
       calendarModule,
       userModule,
       committeeModule,
+      notificationModule,
+      inventoryModule,
       committeeMemberModule,
       amenitiesModule,
       roomModule,
@@ -112,19 +114,19 @@ export const editUserTypeDetailService = async (params) => {
     }
 
     userType.userTypeName = userTypeName || userType.userTypeName;
-    userType.calendarModule = calendarModule ;
-    userType.userModule = userModule ;
-    userType.committeeModule = committeeModule ;
-    userType.committeeMemberModule = committeeMemberModule ;
+    userType.calendarModule = calendarModule;
+    userType.userModule = userModule;
+    userType.committeeModule = committeeModule;
+    userType.notificationModule = notificationModule;
+    userType.inventoryModule = inventoryModule;
+    userType.committeeMemberModule = committeeMemberModule;
     userType.amenitiesModule = amenitiesModule;
-    userType.roomModule = roomModule ;
+    userType.roomModule = roomModule;
     userType.locationModule = locationModule;
-    userType.foodBeverageModule =
-      foodBeverageModule ;
-    userType.meetingLogsModule =
-      meetingLogsModule ;
-    userType.reportModule = reportModule ;
-    userType.userRoleModule = userRoleModule ;
+    userType.foodBeverageModule = foodBeverageModule;
+    userType.meetingLogsModule = meetingLogsModule;
+    userType.reportModule = reportModule;
+    userType.userRoleModule = userRoleModule;
 
     await userType.save();
     return userType;
@@ -139,6 +141,8 @@ export const addUserTypeService = async (
   calendarModule,
   userModule,
   committeeModule,
+  notificationModule,
+  inventoryModule,
   committeeMemberModule,
   amenitiesModule,
   roomModule,
@@ -160,6 +164,8 @@ export const addUserTypeService = async (
       calendarModule,
       userModule,
       committeeModule,
+      notificationModule,
+      inventoryModule,
       committeeMemberModule,
       amenitiesModule,
       roomModule,
