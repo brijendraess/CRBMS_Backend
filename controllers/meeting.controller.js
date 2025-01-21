@@ -138,8 +138,8 @@ export const addMeeting = asyncHandler(async (req, res) => {
     const templateValue = {
       name: item?.fullname,
       date: getFormattedDate(item?.meetingDate),
-      startTime: formatTimeShort(item?.startTime),
-      startTime: formatTimeShort(item?.endTime),
+      startTime: formatTimeShort(startTime),
+      endTime: formatTimeShort(endTime),
     };
     sendSmsToAdminForApproveHelper(item?.phoneNumber, templateValue);
   });
@@ -230,17 +230,33 @@ export const addMeeting = asyncHandler(async (req, res) => {
     });
 
   // Notifications will be done here for all quest user
-  guestUser &&
-    guestUser.split(",").forEach(async (quest) => {
-      // Sending email to all attendees
-      const recipientName = quest.split("@")[0];
-      const emailTemplateValuesSet = {
-        ...emailTemplateValues,
-        recipientName: recipientName,
-      };
-      //await roomBookingEmail(eventDetails, quest, emailTemplateValuesSet);
-      // End of Email sending section
-    });
+  // guestUser &&
+  //   guestUser.split(",").forEach(async (quest) => {
+  //     // Sending email to all attendees
+  //     const recipientName = quest.split("@")[0];
+  //     const emailTemplateValuesSet = {
+  //       ...emailTemplateValues,
+  //       recipientName: recipientName,
+  //     };
+  //     //await roomBookingEmail(eventDetails, quest, emailTemplateValuesSet);
+  //     // End of Email sending section
+  //   });
+    if (guestUser) {
+      // Ensure `guestUser` is treated as a consistent array
+      const guestList = guestUser.includes(",") ? guestUser.split(",") : [guestUser];
+    
+      // Loop through each guest user
+        guestList.map(async (guest) => {
+          const recipientName = guest.split("@")[0];
+          const emailTemplateValuesSet = {
+            ...emailTemplateValues,
+            recipientName: recipientName,
+          };
+          
+          // Uncomment and use this to send emails
+          // await roomBookingEmail(eventDetails, guest, emailTemplateValuesSet);
+        })
+    }
 
   res.status(201).json({
     message:

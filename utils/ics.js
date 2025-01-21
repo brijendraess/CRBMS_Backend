@@ -312,4 +312,41 @@ const cancelledEventMeetingData = (eventData) => {
   return eventDetails;
 };
 
-export { createICSFile,updateICSFile,postponeICSFile,cancelledICSFile, formatDateToICS, eventMeetingData,updateEventMeetingData,postponeEventMeetingData,cancelledEventMeetingData };
+const meetingStartingIn30MinData = (eventData) => {
+  const {
+    uid,
+    meetingDate,
+    startTime,
+    endTime,
+    summary,
+    description,
+    location,
+    sequence,
+  } = eventData;
+  const updatedStartDate = `${meetingDate}T${startTime}Z`;
+  const updatedEndDate = `${meetingDate}T${endTime}Z`;
+  const meetingStartLocalDate = new Date(updatedStartDate);
+  const utcMeetingStartDate = new Date(
+    meetingStartLocalDate.getTime() +
+      meetingStartLocalDate.getTimezoneOffset() * 60000
+  );
+  const meetingEndLocalDate = new Date(updatedEndDate);
+  const utcMeetingEndDate = new Date(
+    meetingEndLocalDate.getTime() +
+      meetingEndLocalDate.getTimezoneOffset() * 60000
+  );
+
+  const eventDetails = {
+    uid:uid,
+    dtstamp:new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z",
+    dtstart:formatDateToICS(utcMeetingStartDate),
+    dtend:formatDateToICS(utcMeetingEndDate),
+    summary:summary,
+    description:description,
+    location:location,
+    sequence:sequence,
+  };
+  return eventDetails;
+};
+
+export { createICSFile,updateICSFile,postponeICSFile,cancelledICSFile, formatDateToICS, eventMeetingData,updateEventMeetingData,postponeEventMeetingData,cancelledEventMeetingData, meetingStartingIn30MinData };
