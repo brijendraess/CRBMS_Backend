@@ -99,7 +99,7 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     filterCapacity,
   } = req.query;
 
-const user=req.user.UserType.isAdmin==='admin'
+  const user = req.user.UserType.isAdmin === "admin";
   // Checking the available time of the room
   const sanitationPeriod = 15;
   const tolerancePeriod = 15;
@@ -132,7 +132,7 @@ const user=req.user.UserType.isAdmin==='admin'
           }),
         }
       : 1;
-      
+
   const findAvailability =
     whereClause != 1
       ? await Meeting.findAll({
@@ -144,21 +144,25 @@ const user=req.user.UserType.isAdmin==='admin'
     (meeting) => meeting?.dataValues?.roomId
   );
 
-const amenityIds=filterAmenities?await RoomAmenity.findAll({
-  where: {
-    name: {
-      [Op.in]: filterAmenities,
-    },
-  },
-}):[];
+  const amenityIds = filterAmenities
+    ? await RoomAmenity.findAll({
+        where: {
+          name: {
+            [Op.in]: filterAmenities,
+          },
+        },
+      })
+    : [];
 
-const amenityIdCalculated=amenityIds?amenityIds.map((amenity)=>amenity?.dataValues?.id):[];
-const filterCapacityCalculated=filterCapacity?filterCapacity:1;
+  const amenityIdCalculated = amenityIds
+    ? amenityIds.map((amenity) => amenity?.dataValues?.id)
+    : [];
+  const filterCapacityCalculated = filterCapacity ? filterCapacity : 1;
   // Getting Id
 
   const whereClauseAmenityQuantity = amenityIdCalculated.length
-  ? { amenityId: { [Op.in]: amenityIdCalculated } }
-  : {}; // Default condition when the array is empty
+    ? { amenityId: { [Op.in]: amenityIdCalculated } }
+    : {}; // Default condition when the array is empty
 
   const rooms = await Room.findAll({
     where: {
@@ -166,9 +170,9 @@ const filterCapacityCalculated=filterCapacity?filterCapacity:1;
         [Op.notIn]: findAvailabilityCal,
       },
       capacity: {
-        [Op.gte]:filterCapacityCalculated,
+        [Op.gte]: filterCapacityCalculated,
       },
-      isAvailable:user ? { [Op.in]: [true, false] } : true,
+      isAvailable: user ? { [Op.in]: [true, false] } : true,
     },
     include: [
       {
@@ -182,8 +186,11 @@ const filterCapacityCalculated=filterCapacity?filterCapacity:1;
       },
       {
         model: RoomAmenityQuantity,
-       // where:whereClauseAmenityQuantity,
+        // where:whereClauseAmenityQuantity,
       },
+      {
+        model:Meeting
+      }
     ],
   });
   return res
@@ -196,7 +203,6 @@ export const getRoomById = asyncHandler(async (req, res) => {
 
   const room = await getRoomByIdService(roomId);
 
-
   if (!room) {
     throw new ApiError(404, "Room not found");
   }
@@ -207,23 +213,23 @@ export const getRoomById = asyncHandler(async (req, res) => {
 });
 
 export const getAllMeeting = asyncHandler(async (req, res) => {
-  const meeting = await Meeting.findAll( {
-include:[
-  {
-    model:Room,
-    include:[
+  const meeting = await Meeting.findAll({
+    include: [
       {
-        model:Location
+        model: Room,
+        include: [
+          {
+            model: Location,
+          },
+          {
+            model: Services,
+          },
+        ],
       },
       {
-        model: Services,
+        model: User,
       },
-    ]
-  },
-  {
-    model:User
-  }
-]
+    ],
   });
   if (!meeting) {
     throw new ApiError(404, "Room not found");
@@ -284,7 +290,6 @@ export const updateRoom = asyncHandler(async (req, res) => {
     room.roomImagePath = newRoomImagePath;
     await room.save();
   }
-
 
   res.status(200).json({
     success: true,
@@ -549,7 +554,13 @@ export const getAllFoodBeverageActive = asyncHandler(async (req, res) => {
   const result = await getAllFoodBeverageActiveService(roomId);
   return res
     .status(201)
-    .json(new ApiResponse(200, { result }, "Rooms food beverage  Retrieved Successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { result },
+        "Rooms food beverage  Retrieved Successfully"
+      )
+    );
 });
 
 export const createFoodBeverage = asyncHandler(async (req, res) => {
@@ -566,11 +577,7 @@ export const createFoodBeverage = asyncHandler(async (req, res) => {
   return res
     .status(201)
     .json(
-      new ApiResponse(
-        201,
-        { result },
-        "Room food beverage added successfully"
-      )
+      new ApiResponse(201, { result }, "Room food beverage added successfully")
     );
 });
 
@@ -595,10 +602,7 @@ export const updateSanitationStatus = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const { status } = req.body;
 
-  const result = await editSanitationStatus(
-    status,
-    roomId
-  );
+  const result = await editSanitationStatus(status, roomId);
 
   res.status(200).json({
     success: true,
@@ -623,5 +627,11 @@ export const getallCurrentMeeting = asyncHandler(async (req, res) => {
   const result = await getallCurrentMeetingService();
   return res
     .status(201)
-    .json(new ApiResponse(200, { result }, "All meeting of current time retrieved Successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { result },
+        "All meeting of current time retrieved Successfully"
+      )
+    );
 });
