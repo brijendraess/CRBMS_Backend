@@ -11,6 +11,8 @@ import MeetingUser from "./models/MeetingUser.js";
 import MeetingCommittee from "./models/MeetingCommittee.js";
 import Meeting from "./models/Meeting.models.js";
 import User from "./models/User.models.js";
+import cron from "node-cron";
+import { CronHelper } from "./helpers/cron.helper.js";
 
 const app = express();
 
@@ -72,6 +74,11 @@ dbConnection()
   .catch((err) => {
     console.log("DATABASE CONNECTION FAILED !!!!", err);
   });
+
+
+cron.schedule('*/20 * * * *', async () => {
+  await CronHelper.sendSmsAndEmailBefore30Min();
+})
 
 const syncModels = async () => {
   let syncTable;

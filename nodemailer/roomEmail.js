@@ -1,8 +1,8 @@
 
 import fs from "fs";
-import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_START_REQUEST_TEMPLATE, ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE } from "../mailTemplate/roomEmailTemplate.js";
+import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_START_REQUEST_TEMPLATE, ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE, MEETING_STARTING_IN_30_MIN } from "../mailTemplate/roomEmailTemplate.js";
 import { replacePlaceholders } from "../utils/emailResponse.js";
-import { cancelledICSFile, createICSFile, postponeICSFile, updateICSFile } from "../utils/ics.js";
+import { cancelledICSFile, createICSFile, meetingStartingIn30MinData, postponeICSFile, updateICSFile } from "../utils/ics.js";
 import { transporter, sender } from "./nodemailer.config.js";
 
 export const roomBookingEmail = async (eventDetails,email, emailTemplateValues) => {
@@ -133,3 +133,23 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       throw new Error(`Error sending room booking ${meetingStatus} confirmation email: ${error}`);
     }
   };
+
+export const meetingStartingIn30Min = async (eventDetails,email, emailTemplateValues) => {
+  try {
+    const {filePath,fileName} = meetingStartingIn30MinData(eventDetails);
+    await transporter.sendMail({
+      from: `"${sender.name}" <${sender.email}>`,
+      to: email,
+      subject: "Meeting Reminder",
+      html:replacePlaceholders(MEETING_STARTING_IN_30_MIN,emailTemplateValues),
+      attachments: [
+        {
+        filename: fileName,
+        path: filePath,
+      }],
+    });
+  } catch (error) {
+    console.error("Error sending organizer to extend the meeting confirmation email:", error);
+    throw new Error(`Error sending organizer to extend the meeting confirmation email: ${error}`);
+  }
+};
