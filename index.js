@@ -80,6 +80,10 @@ cron.schedule('*/5 * * * *', async () => {
   await CronHelper.sendSmsAndEmailBefore30Min();
 })
 
+cron.schedule('*/5 * * * *', async () => {
+  await CronHelper.sendSmsAndEmailAfterCompletion();
+})
+
 const syncModels = async () => {
   let syncTable;
   try {
