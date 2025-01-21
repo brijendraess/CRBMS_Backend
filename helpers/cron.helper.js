@@ -19,7 +19,7 @@ export class CronHelper {
         const thirtyMinutesAfter = new Date(now.getTime() + 30 * 60 * 1000); 
 
         const formatter = new Intl.DateTimeFormat('en-IN', {
-            timeZone: 'Asia/Kolkata',
+            timeZone: process.env.TIMEZONE,
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
@@ -31,13 +31,17 @@ export class CronHelper {
 
         const reqDate = now.toISOString().split("T")[0];
 
+        const formattedCurrentHour = currentHour.padStart(8, '0').replace('.', ':');
+        const formattedAfter30Min = after30Min.padStart(8, '0').replace('.', ':');
+
         const meeting = await Meeting.findAll({
             where: {
                 meetingDate: reqDate,
                 startTime: {
-                    [Op.between]: [currentHour, after30Min]
+                    [Op.between]: [formattedCurrentHour, formattedAfter30Min]
                 },
-                status: "scheduled"
+                status: "scheduled",
+                before30MinMailSent: false
             },
             include: [
                 {
@@ -49,11 +53,15 @@ export class CronHelper {
             ],
         });
 
-        console.log(meeting, "meeting");
-
-
-        if (!meeting) {
-            throw new ApiError(404, "meeting not found");
+        if (meeting.length > 0) {
+            await Meeting.update(
+                { before30MinMailSent: true }, // The field to update
+                {
+                    where: {
+                        id: meeting.map(meetingData =>  meetingData?.dataValues?.id), // Update only the found meetings
+                    },
+                }
+            );
         }
 
         if (meeting) {

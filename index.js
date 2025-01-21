@@ -76,7 +76,7 @@ dbConnection()
   });
 
 
-cron.schedule('*/20 * * * *', async () => {
+cron.schedule('*/5 * * * *', async () => {
   await CronHelper.sendSmsAndEmailBefore30Min();
 })
 

@@ -52,6 +52,12 @@ const Meeting = sequelize.define(
       allowNull: false,
       defaultValue: false, // Public by default
     },
+
+    before30MinMailSent: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false, // Public by default
+    },
   
     status: {
       type: DataTypes.ENUM("pending","scheduled", "start", "completed", "cancelled"),
