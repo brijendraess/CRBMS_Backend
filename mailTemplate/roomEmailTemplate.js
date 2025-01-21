@@ -775,3 +775,96 @@ export const MEETING_STARTING_IN_30_MIN = `
 </body>
 </html>
 `
+
+export const ROOM_MEETING_REQUEST_TEMPLATE = `
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Booking Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .email-header {
+            background-color: #007BFF;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        .email-body {
+            padding: 20px;
+            color: #333333;
+        }
+        .email-body h2 {
+            margin-top: 0;
+            color: #007BFF;
+        }
+        .email-details {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .email-details p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .email-footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777777;
+            padding: 10px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007BFF;
+            color: #ffffff;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            Room Booking Request
+        </div>
+        <div class="email-body">
+            <h2>Meeting Room Booking Request</h2>
+            <p>Dear {name},</p>
+            <p>A request has been made for a room booking. Below are the details of the request:</p>
+            <div class="email-details">
+                <p><strong>Room Name:</strong> {roomName}</p>
+                <p><strong>Date:</strong> {bookingDate}</p>
+                <p><strong>Time:</strong> {startTime} - {endTime}</p>
+                <p><strong>Location:</strong> {location}</p>
+                <p><strong>Requested By:</strong> {organizerName}</p>
+                <p><strong>Subject:</strong> {subject}</p>
+                <p><strong>Agenda:</strong> {agenda}</p>
+                <p><strong>Description:</strong> {notes}</p>
+            </div>
+            <p>Please review this request and confirm if the room can be allocated.</p>
+        </div>
+        <div class="email-footer">
+            © 2024 CRBMS. All Rights Reserved.
+        </div>
+    </div>
+</body>
+</html>
+
+`
