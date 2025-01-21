@@ -16,6 +16,7 @@ import {
   roomBookingChangeStatusEmail,
   roomBookingEmail,
   roomBookingPostponeEmail,
+  roomBookingRequestEmail,
   roomBookingUpdateEmail,
 } from "../nodemailer/roomEmail.js";
 import { getRoomByIdService } from "../services/Room.service.js";
@@ -132,19 +133,6 @@ export const addMeeting = asyncHandler(async (req, res) => {
   // Bulk insert into MeetingCommittee
   await MeetingCommittee.bulkCreate(committeesArray);
 
-  // Send SMS to admin to approve the meeting
-  const adminUser = await getAllAdminUser();
-  adminUser.map((item) => {
-    const templateValue = {
-      name: item?.fullname,
-      date: getFormattedDate(item?.meetingDate),
-      startTime: formatTimeShort(startTime),
-      endTime: formatTimeShort(endTime),
-    };
-    sendSmsToAdminForApproveHelper(item?.phoneNumber, templateValue);
-  });
-  // End of the SMS section
-
   // Fetch the data for email
   const rooms = await getRoomByIdService(roomId);
   const organizer = await getUserByIdService(organizerId);
@@ -159,6 +147,43 @@ export const addMeeting = asyncHandler(async (req, res) => {
     location: rooms[0]?.dataValues?.Location?.locationName,
     organizerName: organizer[0]?.dataValues?.fullname,
   };
+
+  const eventData = {
+    uid: newMeeting?.dataValues?.id,
+    meetingDate: newMeeting?.dataValues?.meetingDate,
+    startTime: newMeeting?.dataValues?.startTime,
+    endTime: newMeeting?.dataValues?.endTime,
+    summary: newMeeting?.dataValues?.subject,
+    description: newMeeting?.dataValues?.notes,
+    location: rooms[0]?.dataValues?.Location?.locationName,
+    sequence: 2,
+  };
+  const eventDetails = updateEventMeetingData(eventData);
+
+  const adminUser = await getAllAdminUser();
+  adminUser.map(async (item) => {
+    // Send SMS to admin to approve the meeting
+    const templateValue = {
+      name: item?.fullname,
+      date: getFormattedDate(item?.meetingDate),
+      startTime: formatTimeShort(startTime),
+      endTime: formatTimeShort(endTime),
+    };
+    await sendSmsToAdminForApproveHelper(item?.phoneNumber, templateValue);
+    // End of the SMS section
+
+    // Sending email to all attendees
+    const emailTemplateValuesSet = {
+      ...emailTemplateValues,
+      name: item?.fullname,
+    };
+    await roomBookingRequestEmail(
+      eventDetails,
+      item?.email,
+      emailTemplateValuesSet
+    );
+    // End of Email sending section
+  });
 
   // Notifications will be done here
   attendees &&
