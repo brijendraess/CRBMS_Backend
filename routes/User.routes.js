@@ -19,6 +19,7 @@ import {
   softDeleteUser,
   permanentDeleteUser,
   resetPasswordAfterLoggedIn,
+  updateUserSingleProfile,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -60,6 +61,11 @@ router.route("/:id").get(verifyJWT, getUserById);
 router
   .route("/update-profile/:id")
   .put(verifyJWT, upload.single("profileImage"), updateUserProfile);
+
+  // Update User Profile
+router
+.route("/update-single-profile/:id")
+.put(verifyJWT, upload.single("profileImage"), updateUserSingleProfile);
 
 // Change Password by user manually
 router.route("/update-password").put(verifyJWT, updatePassword);

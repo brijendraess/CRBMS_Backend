@@ -198,7 +198,7 @@ const loginUser = asyncHandler(async (req, res) => {
     otp: OTP,
     expired: 30,
   };
-sendSmsOTPHelper(user?.phoneNumber,templateValue)
+  sendSmsOTPHelper(user?.phoneNumber, templateValue);
   // End of the SMS section
 
   await sendOTP(user.email, OTP);
@@ -337,23 +337,23 @@ const getUserById = asyncHandler(async (req, res) => {
     });
     // Process result to group committees
     const userData = {
-      id: result.dataValues.id,
-      fullname: result.dataValues.fullname,
-      email: result.dataValues.email,
+      id: result?.dataValues?.id,
+      fullname: result?.dataValues?.fullname,
+      email: result?.dataValues?.email,
       user_type: {
-        id: result.dataValues.UserType.dataValues.id,
-        label: result.dataValues.UserType.dataValues.userTypeName,
+        id: result?.dataValues?.UserType?.dataValues?.id,
+        label: result?.dataValues?.UserType?.dataValues?.userTypeName,
       },
-      phoneNumber: result.dataValues.phoneNumber,
-      avatarPath: result.dataValues.avatarPath,
-      committees: result.dataValues.CommitteeMembers.filter(
-        (row) => row.dataValues.Committee.dataValues.name
+      phoneNumber: result?.dataValues?.phoneNumber,
+      avatarPath: result?.dataValues?.avatarPath,
+      committees: result?.dataValues?.CommitteeMembers?.filter(
+        (row) => row?.dataValues?.Committee?.dataValues?.name
       ) // Filter out rows with no committee
-        .map((row) => row.dataValues.Committee.dataValues.name), // Extract committee names
-      services: result.dataValues.UserServices.filter(
-        (row) => row.dataValues.Service.dataValues.servicesName
+        .map((row) => row?.dataValues?.Committee?.dataValues?.name), // Extract committee names
+      services: result?.dataValues?.UserServices?.filter(
+        (row) => row?.dataValues?.Service?.dataValues?.servicesName
       ) // Filter out rows with no committee
-        .map((row) => row.dataValues.Service.dataValues.servicesName), // Extract committee names
+        .map((row) => row?.dataValues?.Service?.dataValues?.servicesName), // Extract committee names
     };
 
     return res
@@ -573,6 +573,68 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         200,
         user,
         "User profile and committees updated successfully"
+      )
+    );
+});
+
+// Update User (Admin)
+const updateUserSingleProfile = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { fullname, email, phoneNumber } =
+    req.body;
+  const loggedInUser = await User.findByPk(req.user.id);
+  if (!loggedInUser) {
+    throw new ApiError(400, "Please log in");
+  }
+
+  let avatarPath = null;
+
+  const user = await User.findByPk(id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (loggedInUser.id !== user.id) {
+    throw new ApiError(
+      403,
+      "Access denied. Only admins can update other users' profiles."
+    );
+  }
+
+  // Update user details
+  user.fullname = fullname || user.fullname;
+  user.email = email || user.email;
+  user.phoneNumber = phoneNumber || user.phoneNumber;
+  
+  await user.save();
+
+  if (!user) {
+    if (req.file) fs.unlinkSync(`public/${avatarPath}`); // Remove image if room creation fails
+    throw new ApiError(500, "Failed to profile image");
+  }
+
+  if (req.file) {
+    const avatarPath = req.file ? `avatars/${req.file.filename}` : null;
+    const newAvatarPath = `avatars/${fullname.replace(/\s+/g, "_")}_${
+      user.id
+    }${path.extname(req.file.originalname).toLowerCase()}`;
+    try {
+      fs.renameSync(`public/${avatarPath}`, `public/${newAvatarPath}`);
+    } catch (error) {
+      console.error("Error renaming file:", error.message);
+    }
+    user.avatarPath = newAvatarPath;
+  }
+  await user.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user,
+        "User profile updated successfully"
       )
     );
 });
@@ -816,4 +878,5 @@ export {
   softDeleteUser,
   permanentDeleteUser,
   resetPasswordAfterLoggedIn,
+  updateUserSingleProfile,
 };
