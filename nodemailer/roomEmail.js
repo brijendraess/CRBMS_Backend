@@ -1,8 +1,8 @@
 
 import fs from "fs";
-import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_START_REQUEST_TEMPLATE, ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE, MEETING_STARTING_IN_30_MIN, ROOM_MEETING_REQUEST_TEMPLATE } from "../mailTemplate/roomEmailTemplate.js";
+import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_START_REQUEST_TEMPLATE, ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE, MEETING_STARTING_IN_30_MIN, ROOM_MEETING_REQUEST_TEMPLATE, NEW_MEMBER_ADDED } from "../mailTemplate/roomEmailTemplate.js";
 import { replacePlaceholders } from "../utils/emailResponse.js";
-import { cancelledICSFile, createICSFile, meetingStartingIn30MinData, postponeICSFile, updateICSFile } from "../utils/ics.js";
+import { cancelledICSFile, createICSFile, meetingStartingIn30MinData, newMemberCreatedICSFile, postponeICSFile, updateICSFile } from "../utils/ics.js";
 import { transporter, sender } from "./nodemailer.config.js";
 
 export const roomBookingEmail = async (eventDetails,email, emailTemplateValues) => {
@@ -170,7 +170,27 @@ export const roomBookingRequestEmail = async (eventDetails,email, emailTemplateV
     });
     fs.unlinkSync(filePath); // Clean up the .ics file
   } catch (error) {
-    console.error("Error sending room booking confirmation email:", error);
-    throw new Error(`Error sending room booking confirmation email: ${error}`);
+    console.error("Error sending room booking request email:", error);
+    throw new Error(`Error sending room booking request email: ${error}`);
+  }
+};
+
+export const memberCreatedEmail = async (eventDetails,email, emailTemplateValues) => {
+  try {
+    const {filePath,fileName} = newMemberCreatedICSFile(eventDetails);
+    await transporter.sendMail({
+      from: `"${sender.name}" <${sender.email}>`,
+      to: email,
+      subject: "Account Credentials Created",
+      html:replacePlaceholders(NEW_MEMBER_ADDED,emailTemplateValues),
+      attachments: [
+        {
+        filename: fileName,
+        path: filePath,
+      }],
+    });
+  } catch (error) {
+    console.error("Error sending mail to new member added: ", error);
+    throw new Error(`Error sending mail to new member added: ${error}`);
   }
 };

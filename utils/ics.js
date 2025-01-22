@@ -349,4 +349,40 @@ const meetingStartingIn30MinData = (eventData) => {
   return eventDetails;
 };
 
-export { createICSFile,updateICSFile,postponeICSFile,cancelledICSFile, formatDateToICS, eventMeetingData,updateEventMeetingData,postponeEventMeetingData,cancelledEventMeetingData, meetingStartingIn30MinData };
+const createdMemberData = (eventData) => {
+  const {
+    uid,
+    sequence,
+  } = eventData;
+
+  const eventDetails = {
+    uid:uid,
+    sequence:sequence,
+  };
+  return eventDetails;
+};
+
+const newMemberCreatedICSFile = (eventDetails) => {
+  const {
+    uid,
+    sequence,
+  } = eventDetails;
+
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:${uid}
+DESCRIPTION: New Member created
+SEQUENCE:${sequence}
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR`;
+
+  const filePath = `./public/ics/new_member_${Date.now()}.ics`;
+  fs.writeFileSync(filePath, icsContent);
+  return { filePath, fileName: `new_member_${Date.now()}.ics` };
+};
+
+export { createICSFile,updateICSFile,postponeICSFile,cancelledICSFile, formatDateToICS, eventMeetingData,updateEventMeetingData,postponeEventMeetingData,cancelledEventMeetingData, meetingStartingIn30MinData, createdMemberData, newMemberCreatedICSFile };

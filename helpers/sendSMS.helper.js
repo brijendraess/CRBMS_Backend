@@ -7,6 +7,7 @@ import {
   SEND_SMS_SCHEDULED_TEMPLATE,
   SEND_SMS_START_TEMPLATE,
   SEND_SMS_TO_ADMIN_TO_APPROVE_TEMPLATE,
+  SEND_SMS_TO_NEW_MEMBER_TEMPLATE,
   USER_OTP_TEMPLATE,
 } from "../smsTemplate/smsTemplate.js";
 import { replacePlaceholders } from "../utils/emailResponse.js";
@@ -92,6 +93,13 @@ const sendSmsCompleteHelper = (to, templateValue) => {
   sendSMS(toNumber, message);
 };
 
+const sendSmsToNewMemberAdded = (to, templateValue) => {
+  const message = replacePlaceholders(SEND_SMS_TO_NEW_MEMBER_TEMPLATE, templateValue);
+  //const toNumber = formatPhoneNumber(to);
+  const toNumber = formatPhoneNumber(process.env.TWILIO_REGISTERED_NUMBER_TO);
+  sendSMS(toNumber, message);
+};
+
 export {
   sendSmsOTPHelper,
   sendSmsToAdminForApproveHelper,
@@ -101,5 +109,6 @@ export {
   sendSmsScheduledHelper,
   sendSmsStartHelper,
   sendSmsCompleteHelper,
-  sendSms30MinBefore
+  sendSms30MinBefore,
+  sendSmsToNewMemberAdded
 };

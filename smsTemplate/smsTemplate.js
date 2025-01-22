@@ -23,4 +23,7 @@ export const SEND_SMS_30_MIN_BEFORE_START = `Hi {name}, just a heads-up that our
 
 
 export const SEND_SMS_COMPLETE_TEMPLATE=`Hi {name}, thanks for taking the time to meet today. It was great catching up! Let me know if there’s anything else we need to follow up on.`
+export const SEND_SMS_TO_NEW_MEMBER_TEMPLATE=`Hi {name}, your account has been created!
 
+Username: {userName}
+Password: {password}`
