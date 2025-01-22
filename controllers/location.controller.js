@@ -4,6 +4,7 @@ import { getAllActiveLocationService } from "../services/Location.services.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Sequelize } from "sequelize";
 
 export const addLocation = asyncHandler(async (req, res) => {
   const { name } = req.body;
@@ -51,6 +52,12 @@ export const updateLocation = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Location not found");
   }
 
+  const existingLocation = await Location.findOne({
+    where: { locationName: name, id: { [Sequelize.Op.ne]: id }, },
+  });
+  if (existingLocation) {
+    throw new ApiError(400, "Location with this name already exists");
+  }
   let locationImagePath = null;
   if (req.file) {
     locationImagePath = `location/${name.replace(/\s+/g, "_")}${path
