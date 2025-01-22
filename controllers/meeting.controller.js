@@ -1314,8 +1314,19 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
       });
   });
 
+  
+  await Room.update(
+      { sanitationStatus: false },
+      {
+          where: {
+              id: meeting[0]?.dataValues?.roomId
+          },
+      }
+  );
+
+
   res.status(200).json({
-    message: "Meeting canceled and notifications sent to attendees",
+    message: "Meeting status updated and notifications sent to attendees",
   });
 });
 

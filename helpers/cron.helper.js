@@ -14,7 +14,7 @@ import { sendSms30MinBefore, sendSmsCompleteHelper } from "./sendSMS.helper.js";
 
 export class CronHelper {
     static async sendSmsAndEmailBefore30Min() {
-        console.log("Cron started")
+        // console.log("Cron started")
         const now = new Date(); // Current UTC time
         const thirtyMinutesAfter = new Date(now.getTime() + 30 * 60 * 1000); 
 
@@ -210,11 +210,11 @@ export class CronHelper {
                 }
             );
         }
-        console.log("Cron executed successfully.")
+        // console.log("Cron executed successfully.")
     }
 
     static async sendSmsAndEmailAfterCompletion() {
-        console.log("Cron for meeting completion started")
+        // console.log("Cron for meeting completion started")
         const now = new Date(); // Current UTC time
 
         const formatter = new Intl.DateTimeFormat('en-IN', {
@@ -251,7 +251,7 @@ export class CronHelper {
 
         const meetingStatus = "completed";
 
-        console.log(meeting, "mee")
+        // console.log(meeting, "mee")
         if (meeting) {
             meeting.map(async (meetingData) => {
                 const attendees = await MeetingUser?.findAll({
@@ -409,7 +409,19 @@ export class CronHelper {
                     },
                 }
             );
+
+            meeting.map(async (meetingData) => {
+                await Room.update(
+                    { sanitationStatus: false },
+                    {
+                        where: {
+                            id: meetingData?.dataValues?.roomId
+                        },
+                    }
+                );
+
+            })
         }
-        console.log("Cron executed successfully.")
+        // console.log("Cron executed successfully.")
     }
 }
