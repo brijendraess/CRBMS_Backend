@@ -28,6 +28,8 @@ import RoomAmenity from "../models/RoomAmenity.model.js";
 import RoomAmenityQuantity from "../models/RoomAmenitiesQuantity.models.js";
 import User from "../models/User.models.js";
 import Services from "../models/Services.models.js";
+import FoodBeverage from "../models/FoodBeverage.model.js";
+import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
 
 export const createRoom = asyncHandler(async (req, res) => {
   const {
@@ -96,6 +98,9 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     filterStartTime,
     filterEndingTime,
     filterAmenities,
+    filterLocation,
+    filterServices,
+    filterFoodBeverage,
     filterCapacity,
   } = req.query;
 
@@ -144,6 +149,7 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     (meeting) => meeting?.dataValues?.roomId
   );
 
+  // Amenities execution
   const amenityIds = filterAmenities
     ? await RoomAmenity.findAll({
         where: {
@@ -157,12 +163,40 @@ export const getAllRooms = asyncHandler(async (req, res) => {
   const amenityIdCalculated = amenityIds
     ? amenityIds.map((amenity) => amenity?.dataValues?.id)
     : [];
-  const filterCapacityCalculated = filterCapacity ? filterCapacity : 1;
-  // Getting Id
 
   const whereClauseAmenityQuantity = amenityIdCalculated.length
     ? { amenityId: { [Op.in]: amenityIdCalculated } }
-    : {}; // Default condition when the array is empty
+    : null; // Default condition when the array is empty
+
+  // Food and beverage execution
+  const foodBeverageIds = filterFoodBeverage
+    ? await FoodBeverage.findAll({
+        where: {
+          foodBeverageName: {
+            [Op.in]: filterFoodBeverage,
+          },
+        },
+      })
+    : [];
+  const foodBeverageIdCalculated = foodBeverageIds
+    ? foodBeverageIds.map((foodBeverage) => foodBeverage?.dataValues?.id)
+    : [];
+
+  const whereClauseFoodBeverage = foodBeverageIdCalculated.length
+    ? { foodBeverageId: { [Op.in]: foodBeverageIdCalculated } }
+    : null; // Default condition when the array is empty
+
+  const filterCapacityCalculated = filterCapacity ? filterCapacity : 1;
+
+  const filterLocationCalculated = filterLocation ? filterLocation : null;
+  const whereClauseLocation = filterLocationCalculated
+    ? { locationName: { [Op.in]: filterLocationCalculated } }
+    : null;
+
+  const filterServicesCalculated = filterServices ? filterServices : null;
+  const whereClauseServices = filterServicesCalculated
+    ? { servicesName: { [Op.in]: filterServicesCalculated } }
+    : null;
 
   const rooms = await Room.findAll({
     where: {
@@ -177,20 +211,26 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     include: [
       {
         model: Location,
+        where: whereClauseLocation || null,
       },
       {
         model: Services,
+        where: whereClauseServices || null,
       },
       {
         model: RoomGallery,
       },
       {
         model: RoomAmenityQuantity,
-        // where:whereClauseAmenityQuantity,
+        where: whereClauseAmenityQuantity || null,
       },
       {
-        model:Meeting
-      }
+        model: RoomFoodBeverage,
+        where: whereClauseFoodBeverage || null,
+      },
+      {
+        model: Meeting,
+      },
     ],
   });
   return res
