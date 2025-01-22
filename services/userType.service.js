@@ -106,6 +106,7 @@ export const editUserTypeDetailService = async (params) => {
       meetingLogsModule,
       userRoleModule,
       userTypeId,
+      servicesModule,
     } = params;
     const userType = await UserType.findByPk(userTypeId);
 
@@ -127,8 +128,11 @@ export const editUserTypeDetailService = async (params) => {
     userType.meetingLogsModule = meetingLogsModule;
     userType.reportModule = reportModule;
     userType.userRoleModule = userRoleModule;
+    userType.servicesModule = servicesModule;
 
     await userType.save();
+    console.log(userType);
+
     return userType;
   } catch (error) {
     console.log("error", error);
@@ -153,7 +157,8 @@ export const addUserTypeService = async (
   userRoleModule,
   status,
   createdBy,
-  isAdmin
+  isAdmin,
+  servicesModule
 ) => {
   try {
     if (!userTypeName) {
@@ -177,6 +182,7 @@ export const addUserTypeService = async (
       status,
       createdBy,
       isAdmin,
+      servicesModule,
     });
     return userType;
   } catch (error) {

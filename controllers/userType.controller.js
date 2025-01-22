@@ -65,7 +65,10 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     reportModule,
     meetingLogsModule,
     userRoleModule,
+    servicesModule,
   } = req.body;
+  console.log(roomModule);
+
   const params = {
     userTypeName,
     calendarModule,
@@ -82,6 +85,7 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     meetingLogsModule,
     userRoleModule,
     userTypeId,
+    servicesModule,
   };
   const result = await editUserTypeDetailService(params);
   return res
@@ -108,6 +112,7 @@ export const addUserType = asyncHandler(async (req, res) => {
     status,
     createdBy,
     isAdmin,
+    servicesModule,
   } = req.body;
 
   const result = await addUserTypeService(
@@ -127,7 +132,8 @@ export const addUserType = asyncHandler(async (req, res) => {
     userRoleModule,
     status,
     createdBy,
-    isAdmin
+    isAdmin,
+    servicesModule
   );
   return res
     .status(200)

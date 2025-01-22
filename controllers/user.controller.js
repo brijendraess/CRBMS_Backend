@@ -21,7 +21,9 @@ import UserType from "../models/UserType.model.js";
 import UserServices from "../models/UserServices.models.js";
 import Committee from "../models/Committee.models.js";
 import Services from "../models/Services.models.js";
-import { sendSmsOTPHelper } from "../helpers/sendSMS.helper.js";
+import { sendSmsEditedHelper, sendSmsOTPHelper, sendSmsToNewMemberAdded } from "../helpers/sendSMS.helper.js";
+import { createdMemberData } from "../utils/ics.js";
+import { memberCreatedEmail, roomBookingUpdateEmail } from "../nodemailer/roomEmail.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -136,6 +138,38 @@ const registerUser = asyncHandler(async (req, res) => {
     const createdUser = await User.findByPk(newUser.id, {
       attributes: { exclude: ["password", "refreshToken"] },
     });
+
+    const emailTemplateValues = {
+      subject: "Welcome! Your Account Has Been Created",
+      userName: createdUser.userName,
+      password: password,
+    };
+  
+    const eventData = {
+      uid: createdUser?.id,
+      userName:createdUser.userName, 
+      sequence: 2,
+    };
+    const eventDetails = createdMemberData(eventData);
+
+     // Sending email to all attendees
+     const emailTemplateValuesSet = {
+      ...emailTemplateValues,
+      recipientName: createdUser?.fullname,
+    };
+    await memberCreatedEmail(
+      eventDetails,
+      createdUser?.email,
+      emailTemplateValuesSet
+    );
+    // End of Email sending section
+
+    // Send SMS to all user
+    const templateValue = {
+      name: createdUser?.fullname
+    };
+    sendSmsToNewMemberAdded(createdUser?.phoneNumber, templateValue);
+    // End of the SMS section
 
     return res
       .status(201)
