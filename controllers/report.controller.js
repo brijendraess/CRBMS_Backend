@@ -42,7 +42,15 @@ export const getMeetingCount = asyncHandler(async (req, res, next) => {
     startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Start of today
     endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 1); // End of today
-  } else if (filter === "This Month") {
+  }else if (filter === "This Week") {
+    const currentDay = now.getDay(); // Get the current day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const diffToStartOfWeek = currentDay === 0 ? 6 : currentDay - 1; // Assuming the week starts on Monday
+    startDate = new Date(now);
+    startDate.setHours(0, 0, 0, 0); // Reset time to midnight
+    startDate.setDate(now.getDate() - diffToStartOfWeek); // Move to the start of the week (Monday)
+    endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 7);
+   } else if (filter === "This Month") {
     startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Start of this month
     endDate = new Date(startDate);
     endDate.setMonth(startDate.getMonth() + 1); // Start of next month
