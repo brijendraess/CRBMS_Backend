@@ -475,7 +475,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   // Checking the available time of the room
   // const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
   // const tolerancePeriod = room.dataValues.tolerancePeriod || 0;
-  // let newFormattedStartTime = new Date(startTime); // HH:mm:ss
+  // let newFormattedStartTime = new Date(); // HH:mm:ss
   // const extraCalculatedTime = sanitationPeriod + tolerancePeriod;
   // newFormattedStartTime.setMinutes(
   //   newFormattedStartTime.getMinutes() - extraCalculatedTime
@@ -936,7 +936,7 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
         name: members?.dataValues?.fullname,
         date: getFormattedDate(meeting?.meetingDate),
         startTime: formatTimeShort(meeting?.startTime),
-        startTime: formatTimeShort(meeting?.endTime),
+        endTime: formatTimeShort(meeting?.endTime),
       };
       sendSmsPostponeHelper(members?.dataValues?.phoneNumber, templateValue);
       // End of the SMS section
@@ -985,7 +985,7 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
             name: member?.dataValues?.User?.dataValues?.fullname,
             date: getFormattedDate(meeting?.meetingDate),
             startTime: formatTimeShort(meeting?.startTime),
-            startTime: formatTimeShort(meeting?.endTime),
+            endTime: formatTimeShort(meeting?.endTime),
           };
           sendSmsPostponeHelper(
             member?.dataValues?.User?.dataValues?.phoneNumber,
@@ -1169,7 +1169,7 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
             name: members?.dataValues?.fullname,
             date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
             startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
-            startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+            endTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
           };
           sendSmsCancelHelper(members?.dataValues?.phoneNumber, templateValue);
           // End of the SMS section
@@ -1250,7 +1250,7 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
                 name: member?.dataValues?.User?.dataValues?.fullname,
                 date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
                 startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
-                startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+                endTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
               };
               sendSmsCancelHelper(
                 member?.dataValues?.User?.dataValues?.phoneNumber,
