@@ -780,7 +780,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid or expired reset token");
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await generateMD5(password);
 
   user.password = hashedPassword;
   user.resetPasswordToken = null;
@@ -810,14 +810,20 @@ const resetPasswordAfterLoggedIn = asyncHandler(async (req, res) => {
     return res.status(404).json(new ApiResponse(404, {}, "User not found"));
   }
 
-  const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
-  if (!isPasswordMatch) {
+  // const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
+  // if (!isPasswordMatch) {
+  //   return res
+  //     .status(401)
+  //     .json(new ApiResponse(401, {}, "Old password is incorrect"));
+  // }
+
+  if(generateMD5(oldPassword) != user.password){
     return res
       .status(401)
       .json(new ApiResponse(401, {}, "Old password is incorrect"));
   }
 
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const hashedPassword = await generateMD5(newPassword)
 
   user.password = hashedPassword;
   await user.save();
