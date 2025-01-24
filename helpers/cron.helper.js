@@ -174,7 +174,7 @@ export class CronHelper {
 
                                  // Send SMS to all user
                                 const templateValue = {
-                                    name: member?.dataValues?.fullname
+                                    name: member?.dataValues?.User?.dataValues?.fullname
                                 };
                                 sendSms30MinBefore(member?.dataValues?.phoneNumber, templateValue);
                                 // End of the SMS section
