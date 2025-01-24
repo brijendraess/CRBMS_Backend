@@ -1181,7 +1181,7 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
             name: members?.dataValues?.fullname,
             date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
             startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
-            startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+            endTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
           };
           sendSmsScheduledHelper(members?.dataValues?.phoneNumber, templateValue);
           // End of the SMS section
@@ -1265,7 +1265,7 @@ export const changeMeetingStatus = asyncHandler(async (req, res) => {
                 name: member?.dataValues?.User?.dataValues?.fullname,
                 date: getFormattedDate(meeting[0]?.dataValues?.meetingDate),
                 startTime: formatTimeShort(meeting[0]?.dataValues?.startTime),
-                startTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
+                endTime: formatTimeShort(meeting[0]?.dataValues?.endTime),
               };
               sendSmsScheduledHelper(
                 member?.dataValues?.User?.dataValues?.phoneNumber,
