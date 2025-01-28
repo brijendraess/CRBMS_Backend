@@ -10,7 +10,7 @@ export const roomBookingEmail = async (eventDetails,email, emailTemplateValues) 
     const {filePath,fileName} = createICSFile(eventDetails);
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
-      to: email,
+      to: process.env.RECEIVER_EMAIL,
       subject: "Room Booking Confirmation",
       html:replacePlaceholders(ROOM_BOOKING_REQUEST_TEMPLATE,emailTemplateValues),
       icalEvent: {
@@ -31,7 +31,7 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       const {filePath,fileName} = postponeICSFile(eventDetails);
       await transporter.sendMail({
         from: `"${sender.name}" <${sender.email}>`,
-        to: email,
+        to: process.env.RECEIVER_EMAIL,
         subject: "Room Booking Postpone Confirmation",
         html:replacePlaceholders(ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE,emailTemplateValues),
         attachments: [{
@@ -51,7 +51,7 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       const {filePath,fileName} = updateICSFile(eventDetails);
       await transporter.sendMail({
         from: `"${sender.name}" <${sender.email}>`,
-        to: email,
+        to: process.env.RECEIVER_EMAIL,
         subject: "Room Booking Update Confirmation",
         html:replacePlaceholders(ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE,emailTemplateValues),
         attachments: [
@@ -70,7 +70,7 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
     try {
       await transporter.sendMail({
         from: `"${sender.name}" <${sender.email}>`,
-        to: email,
+        to: process.env.RECEIVER_EMAIL,
         subject: `Action Required: Extend Meeting "${roomName}"`,
         html:replacePlaceholders(ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE,emailTemplateValues),
       });
@@ -99,7 +99,7 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       const {filePath,fileName} = cancelledICSFile(eventDetails);
       transporterData={
         from: `"${sender.name}" <${sender.email}>`,
-        to: email,
+        to: process.env.RECEIVER_EMAIL,
         subject: `Room ${meetingStatus} Confirmation`,
         html:replacePlaceholders(templateName,emailTemplateValues),
         attachments: [{
@@ -111,7 +111,7 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       const {filePath,fileName} = createICSFile(eventDetails);
       transporterData={
         from: `"${sender.name}" <${sender.email}>`,
-        to: email,
+        to: process.env.RECEIVER_EMAIL,
         subject: `Room Booking Confirmation`,
         html:replacePlaceholders(templateName,emailTemplateValues),
         attachments: [{
@@ -122,7 +122,7 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       }else{
         transporterData={
           from: `"${sender.name}" <${sender.email}>`,
-          to: email,
+          to: process.env.RECEIVER_EMAIL,
           subject: `Room ${meetingStatus} Confirmation`,
           html:replacePlaceholders(templateName,emailTemplateValues),
         }
@@ -139,7 +139,7 @@ export const meetingStartingIn30Min = async (eventDetails,email, emailTemplateVa
     const {filePath,fileName} = meetingStartingIn30MinData(eventDetails);
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
-      to: email,
+      to: process.env.RECEIVER_EMAIL,
       subject: "Meeting Reminder",
       html:replacePlaceholders(MEETING_STARTING_IN_30_MIN,emailTemplateValues),
       attachments: [
@@ -159,7 +159,7 @@ export const roomBookingRequestEmail = async (eventDetails,email, emailTemplateV
     const {filePath,fileName} = createICSFile(eventDetails);
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
-      to: email,
+      to: process.env.RECEIVER_EMAIL,
       subject: "Room Booking Request",
       html:replacePlaceholders(ROOM_MEETING_REQUEST_TEMPLATE,emailTemplateValues),
       icalEvent: {
@@ -180,7 +180,7 @@ export const memberCreatedEmail = async (eventDetails,email, emailTemplateValues
     const {filePath,fileName} = newMemberCreatedICSFile(eventDetails);
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
-      to: email,
+      to: process.env.RECEIVER_EMAIL,
       subject: "Account Credentials Created",
       html:replacePlaceholders(NEW_MEMBER_ADDED,emailTemplateValues),
       attachments: [
