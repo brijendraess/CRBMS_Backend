@@ -227,6 +227,17 @@ export const deleteCommittee = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Committee not found");
   }
 
+  const users = await User.findAll({
+    include: {
+      model: CommitteeMember,
+      where: { committeeId }, // Filter CommitteeMember by committeeId
+    },
+  });
+
+  if(users.length >  0){
+    throw new ApiError(404, "Committee already assigned to few users.");
+  }
+
   await CommitteeMember.destroy({
     where: {
       id: committeeId,
