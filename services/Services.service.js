@@ -1,4 +1,6 @@
 import Services from "../models/Services.models.js";
+import User from "../models/User.models.js";
+import UserServices from "../models/UserServices.models.js";
 import { ApiError } from "../utils/ApiError.js";
 
 export const singleServicesService = async (id) => {
@@ -56,6 +58,17 @@ export const activeServicesService = async () => {
 
 export const deleteServicesService = async (id) => {
   try {
+
+    const users = await User.findAll({
+      include: {
+        model: UserServices,
+        where: { servicesId: id }, // Filter UserServices by serviceId
+      },
+    });
+    if (users.length > 0) {
+      throw new ApiError(404, "Service already assigned to few users.");
+    }
+
     const services = await Services.findByPk(id);
     if (!services) {
       throw new ApiError(404, "services not found");
