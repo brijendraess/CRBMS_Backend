@@ -24,6 +24,9 @@ import Services from "../models/Services.models.js";
 import { sendSmsEditedHelper, sendSmsOTPHelper, sendSmsToNewMemberAdded } from "../helpers/sendSMS.helper.js";
 import { createdMemberData } from "../utils/ics.js";
 import { memberCreatedEmail, roomBookingUpdateEmail } from "../nodemailer/roomEmail.js";
+import Meeting from "../models/Meeting.models.js";
+import Room from "../models/Room.models.js";
+import MeetingCommittee from "../models/MeetingCommittee.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -559,7 +562,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       where: {
         userId: id,
         committeeId: committeesToRemove,
-        role: role,
+        // role: role,
       },
     });
   }
@@ -873,6 +876,74 @@ const softDeleteUser = asyncHandler(async (req, res) => {
 
   if (!user) {
     throw new ApiError(404, "User not found"); // Throw ApiError for not found
+  }
+
+  const meetings = await User.findOne({
+    where: { id: id },
+    include: {
+      model: Meeting
+    },
+  });
+
+  const filteredUserMeetings = meetings.Meetings.filter(mc => 
+    mc.status !== "completed" && mc.status !== "cancelled"
+  );
+
+  // console.log(meetings.Meetings, "mee")
+  // const userMeetings = meetings.Meetings;  // Return the meetings associated with the user
+  // console,log(userMeetings, "userMee")
+
+  if(filteredUserMeetings.length > 0){
+    return res.status(500).send("User can not be deleted because user is present in the meeting.")
+  }
+
+  const organizedMeetings = await Meeting.findAll({
+    where: {
+      organizerId: id,
+      status: {
+        [Op.notIn]: ["completed", "cancelled"]  // Exclude completed & cancelled meetings
+      },
+    },
+  });
+
+
+  if(organizedMeetings.length > 0){
+    return res.status(500).send("User can not be deleted because user is present in the meeting.")
+  }
+
+  const userCommittees = await CommitteeMember.findAll({
+    where: { userId: id },
+    include: {
+      model: Committee,  // Include the Committee model to get committee details
+    },
+  });
+
+  const committeeIds = userCommittees.map((committee) => committee.Committee.id);  // Get the committee IDs
+
+  // const userCommitteeMeetings = await MeetingCommittee.findAll({
+  //   where: {CommitteeId: committeeIds},
+  //   include: {
+  //     model: Meeting,
+  //     where: {
+  //       status: {
+  //         [Op.notIn]: ["completed", "cancelled"]  // Exclude completed & cancelled meetings
+  //       },  // Fetch only completed meetings
+  //     },
+  //   }
+  // });
+  const userCommitteeMeetings = await MeetingCommittee.findAll({
+    where: { CommitteeId: committeeIds }
+  });
+
+  const committeeMeetingIds = userCommitteeMeetings.map(mc => mc.MeetingId)
+  
+  // Filter the meetings in JavaScript
+  const committeeMeetings = await Meeting.findAll(({where: {id : committeeMeetingIds} }));
+  const filteredCommittteeMeetings = committeeMeetings.filter((mc) => 
+    mc.status !== "completed" && mc.status !== "cancelled");
+
+  if(filteredCommittteeMeetings.length > 0){
+    return res.status(500).send("User can not be deleted because user is present in the meeting.")
   }
 
   await user.destroy(); // Soft delete the user
