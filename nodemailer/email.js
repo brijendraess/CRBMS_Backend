@@ -11,7 +11,8 @@ export const sendOTP = async (email, otp) => {
   try {
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
-      to: email,
+      // to: email,
+      to: process.env.RECEIVER_EMAIL,
       subject: "Verify your email",
       html: VERIFICATION_EMAIL_TEMPLATE.replace("{verificationCode}", otp),
     });
@@ -27,7 +28,8 @@ export const sendPasswordResetEmail = async (email, resetURL) => {
   try {
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
-      to: email,
+      // to: email,
+      to: process.env.RECEIVER_EMAIL,
       subject: "Reset your password",
       html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetURL),
     });
@@ -43,7 +45,8 @@ export const sendResetSuccessEmail = async (email) => {
   try {
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
-      to: email,
+      // to: email,
+      to: process.env.RECEIVER_EMAIL,
       subject: "Password Reset Successful",
       html: PASSWORD_RESET_SUCCESS_TEMPLATE,
     });

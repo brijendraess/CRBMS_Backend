@@ -88,9 +88,9 @@ export const getAllLocations = asyncHandler(async (req, res) => {
     order: [["createdAt", "DESC"]],
   });
 
-  if (!locations.length) {
-    throw new ApiError(404, "No locations found");
-  }
+  // if (!locations.length) {
+  //   throw new ApiError(404, "No locations found");
+  // }
 
   res
     .status(200)
