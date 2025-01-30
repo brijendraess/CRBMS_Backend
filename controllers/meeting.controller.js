@@ -396,50 +396,98 @@ export const getTodaysMeetings = asyncHandler(async (req, res) => {
 });
 
 export const getMyMeetings = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const id = req.user.id;
 
-  if (!userId) {
+  if (!id) {
     throw new ApiError(400, "User ID is required");
   }
-  // Raw SQL query to fetch meetings organized by the user or where the user is an attendee
-  const myMeetings = await Meeting.findAll({
-    where: {
-      [Op.or]: [
-        { organizerId: userId }, // Check if the user is the organizer
-        {
-          "$User.id$": userId, // Check if the user is an attendee
-        },
-      ],
+
+  const meetings = await User.findOne({
+    where: { id: id },
+    include: {
+      model: Meeting,
+      include: [{model: User}]
     },
-    include: [
-      {
-        model: User, // Many-to-Many relation through MeetingUser
-      },
-      {
-        model: Committee, // Many-to-Many relation through MeetingCommittee
-      },
-      // {
-      //   model: MeetingUser,
-      // },
-      // {
-      //   model: MeetingCommittee,
-      // },
-      {
-        model: Room,
-        include: [
-          {
-            model: Location,
-          },
-        ],
-      },
-    ],
   });
+
+  const filteredUserMeetings = meetings.Meetings;
+
+
+  const organizedMeetings = await Meeting.findAll({
+    where: {
+      organizerId: id,
+    },
+    include: [{model: User}]
+  });
+
+  const userCommittees = await CommitteeMember.findAll({
+    where: { userId: id },
+    include: {
+      model: Committee,  // Include the Committee model to get committee details
+    },
+  });
+
+  const committeeIds = userCommittees.map((committee) => committee.Committee.id);  // Get the committee IDs
+
+
+  const userCommitteeMeetings = await MeetingCommittee.findAll({
+    where: { CommitteeId: committeeIds }
+  });
+
+  const committeeMeetingIds = userCommitteeMeetings.map(mc => mc.MeetingId)
+  
+  // Filter the meetings in JavaScript
+  const committeeMeetings = await Meeting.findAll(({where: {id : committeeMeetingIds}, include: [{model: User}] }));
+  const filteredCommittteeMeetings = committeeMeetings;
+
+  // Raw SQL query to fetch meetings organized by the user or where the user is an attendee
+  // const myMeetings = await Meeting.findAll({
+  //   where: {
+  //     [Op.or]: [
+  //       { organizerId: userId }, // Check if the user is the organizer
+  //       {
+  //         "$User.id$": userId, // Check if the user is an attendee
+  //       },
+  //     ],
+  //   },
+  //   include: [
+  //     {
+  //       model: User, // Many-to-Many relation through MeetingUser
+  //     },
+  //     {
+  //       model: Committee, // Many-to-Many relation through MeetingCommittee
+  //     },
+  //     // {
+  //     //   model: MeetingUser,
+  //     // },
+  //     // {
+  //     //   model: MeetingCommittee,
+  //     // },
+  //     {
+  //       model: Room,
+  //       include: [
+  //         {
+  //           model: Location,
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // });
+
+  const meetingData = { filteredCommittteeMeetings, filteredUserMeetings, organizedMeetings };
+  const uniqueMeetings = Object.values(
+    [...meetingData.filteredCommittteeMeetings, ...meetingData.filteredUserMeetings, ...meetingData.organizedMeetings]
+        .reduce((acc, meeting) => {
+            acc[meeting.id] = meeting;
+            return acc;
+        }, {})
+);
 
   // Respond with meetings
   return res
     .status(200)
     .json(
-      new ApiResponse(200, { myMeetings }, "Meetings  Retrieved Successfully")
+      new ApiResponse(200, { myMeetings: uniqueMeetings }, "Meetings  Retrieved Successfully")
     );
 });
 
