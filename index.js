@@ -21,6 +21,9 @@ dotenv.config({
 });
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost",
+  "http://103.117.156.36:85",
+  "http://103.117.156.36",
   "http://192.168.50.95:5173",
   "http://192.168.50.95:9000",
 ];
@@ -67,7 +70,7 @@ const PORT = process.env.PORT || 9000;
 
 dbConnection()
   .then(() => {
-    app.listen(PORT, () => {
+    app.listen(PORT,'0.0.0.0',() => {
       console.log(`Server Running at ${PORT}`);
     });
   })
