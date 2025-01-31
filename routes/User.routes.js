@@ -20,6 +20,7 @@ import {
   permanentDeleteUser,
   resetPasswordAfterLoggedIn,
   updateUserSingleProfile,
+  getAllActiveUsers,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -48,6 +49,9 @@ router.route("/my-profile").get(verifyJWT, getMyProfile);
 
 // get all users
 router.route("/users").get(verifyJWT, getAllUsers);
+
+// get all active users
+router.route("/active-users").get(verifyJWT, getAllActiveUsers);
 
 // Update my profile
 router

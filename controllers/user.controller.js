@@ -27,6 +27,7 @@ import { memberCreatedEmail, roomBookingUpdateEmail } from "../nodemailer/roomEm
 import Meeting from "../models/Meeting.models.js";
 import Room from "../models/Room.models.js";
 import MeetingCommittee from "../models/MeetingCommittee.js";
+import CommitteeType from "../models/CommitteeType.models.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -41,6 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const {
     email,
     userName,
+    userDescription,
     password,
     fullname,
     user_type,
@@ -107,6 +109,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const newUser = await User.create({
       email,
       userName,
+      userDescription,
       password: hashedPassword,
       fullname,
       phoneNumber,
@@ -356,6 +359,11 @@ const getUserById = asyncHandler(async (req, res) => {
           include: [
             {
               model: Committee,
+              include:[
+                {
+                  model:CommitteeType,
+                }
+              ]
             },
           ],
         },
@@ -376,6 +384,7 @@ const getUserById = asyncHandler(async (req, res) => {
     const userData = {
       id: result?.dataValues?.id,
       fullname: result?.dataValues?.fullname,
+      userDescription: result?.dataValues?.userDescription,
       email: result?.dataValues?.email,
       user_type: {
         id: result?.dataValues?.UserType?.dataValues?.id,
@@ -387,6 +396,10 @@ const getUserById = asyncHandler(async (req, res) => {
         (row) => row?.dataValues?.Committee?.dataValues?.name
       ) // Filter out rows with no committee
         .map((row) => row?.dataValues?.Committee?.dataValues?.name), // Extract committee names
+        committeeType: result?.dataValues?.CommitteeMembers?.filter(
+          (row) => row?.dataValues?.Committee?.dataValues?.name
+        ) // Filter out rows with no committee
+          .map((row) => row?.dataValues?.Committee?.CommitteeType?.name), // Extract committee names  
       services: result?.dataValues?.UserServices?.filter(
         (row) => row?.dataValues?.Service?.dataValues?.servicesName
       ) // Filter out rows with no committee
@@ -453,6 +466,52 @@ const getAllUsers = asyncHandler(async (req, res) => {
   );
 });
 
+// get ALL user active
+const getAllActiveUsers = asyncHandler(async (req, res) => {
+    const loggedInUser = await User.findByPk(req.user.id, {
+    include: [
+      {
+        model: UserType,
+      },
+    ],
+  });
+  if (!loggedInUser) {
+    throw new ApiError(400, "Please Log In");
+  }
+
+  const users = await User.findAll({
+    attributes: { exclude: ["password", "refreshToken"] },
+    include: [
+      {
+        model: UserType,
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+    // limit: parseInt(limit),
+    //offset: parseInt(offset),
+    paranoid: false,
+    isBlocked:false
+  });
+
+  if (!users) {
+    throw new ApiError(500, "No User Found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        users,
+        totalUsers: users.count,
+        // totalPages: Math.ceil(users.count / limit),
+        // currentPage: page,
+      },
+      "Users retrieved successfully"
+    )
+  );
+});
+
+
 // Update profile
 const updateMyProfile = asyncHandler(async (req, res) => {
   // const { fullname, email, phoneNumber } = req.body;
@@ -481,7 +540,7 @@ const updateMyProfile = asyncHandler(async (req, res) => {
 // Update User (Admin)
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { fullname, email, phoneNumber, user_type, committees, services } =
+  const { fullname, email,userDescription, phoneNumber, user_type, committees, services } =
     req.body;
   const loggedInUser = await User.findByPk(req.user.id);
   if (!loggedInUser) {
@@ -506,6 +565,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   // Update user details
   user.fullname = fullname || user.fullname;
   user.email = email || user.email;
+  user.userDescription = userDescription || user.userDescription;
   user.phoneNumber = phoneNumber || user.phoneNumber;
   user.user_type = user_type || user.user_type;
 
@@ -990,4 +1050,5 @@ export {
   permanentDeleteUser,
   resetPasswordAfterLoggedIn,
   updateUserSingleProfile,
+  getAllActiveUsers,
 };
