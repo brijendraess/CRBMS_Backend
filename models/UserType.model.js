@@ -26,6 +26,10 @@ const UserType = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    committeeTypeModule: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     committeeMemberModule: {
       type: DataTypes.STRING(255),
       allowNull: true,

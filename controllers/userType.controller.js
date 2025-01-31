@@ -55,6 +55,7 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     calendarModule,
     userModule,
     committeeModule,
+    committeeTypeModule,
     notificationModule,
     inventoryModule,
     committeeMemberModule,
@@ -67,13 +68,13 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     userRoleModule,
     servicesModule,
   } = req.body;
-  console.log(roomModule);
 
   const params = {
     userTypeName,
     calendarModule,
     userModule,
     committeeModule,
+    committeeTypeModule,
     notificationModule,
     inventoryModule,
     committeeMemberModule,
@@ -99,6 +100,7 @@ export const addUserType = asyncHandler(async (req, res) => {
     calendarModule,
     userModule,
     committeeModule,
+    committeeTypeModule,
     notificationModule,
     inventoryModule,
     committeeMemberModule,

@@ -14,6 +14,7 @@ import eFileRouter from "./routes/eFile.routes.js";
 import userTypeRouter from "./routes/UserType.routes.js";
 import servicesRouter from "./routes/Services.router.js";
 import stockRouter from "./routes/stock.routes.js";
+import committeeTypeRouter from "./routes/CommitteeType.routes.js";
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use("/api/v1/user", userRoutes);
 router.use("/api/v1/rooms", roomRouter);
 router.use("/api/v1/amenity", amenityRoutes);
 router.use("/api/v1/committee", committeeRoutes);
+router.use("/api/v1/committeeType", committeeTypeRouter);
 router.use("/api/v1/meeting", meetingRoutes);
 router.use("/api/v1/location", locationRouter);
 router.use("/api/v1/food-beverages", foodBeverageRouter);
