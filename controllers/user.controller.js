@@ -954,7 +954,8 @@ const softDeleteUser = asyncHandler(async (req, res) => {
   // console,log(userMeetings, "userMee")
 
   if(filteredUserMeetings.length > 0){
-    return res.status(500).send("User can not be deleted because user is present in the meeting.")
+    // return res.status(500).send("User can not be deleted because user is present in the meeting.")
+    throw new ApiError(500, "User can not be deleted because user is present in the meeting.");
   }
 
   const organizedMeetings = await Meeting.findAll({
@@ -968,7 +969,9 @@ const softDeleteUser = asyncHandler(async (req, res) => {
 
 
   if(organizedMeetings.length > 0){
-    return res.status(500).send("User can not be deleted because user is present in the meeting.")
+    // return res.status(500).send("User can not be deleted because user is present in the meeting.")
+    throw new ApiError(500, "User can not be deleted because user is present in the meeting.");
+
   }
 
   const userCommittees = await CommitteeMember.findAll({
@@ -1003,7 +1006,8 @@ const softDeleteUser = asyncHandler(async (req, res) => {
     mc.status !== "completed" && mc.status !== "cancelled");
 
   if(filteredCommittteeMeetings.length > 0){
-    return res.status(500).send("User can not be deleted because user is present in the meeting.")
+    // return res.status(500).send("User can not be deleted because user is present in the meeting.")
+    throw new ApiError(500, "User can not be deleted because user is present in the meeting.");
   }
 
   await user.destroy(); // Soft delete the user
