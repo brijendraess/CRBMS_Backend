@@ -6,9 +6,10 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { sequelize } from "../database/database.js";
 import { Op, QueryTypes, Sequelize } from "sequelize";
+import CommitteeType from "../models/CommitteeType.models.js";
 
 export const createCommittee = asyncHandler(async (req, res) => {
-  const { name, description, createdByUserId } = req.body;
+  const { name,committeeType,chairperson, description, createdByUserId } = req.body;
 
   if (!name) {
     throw new ApiError(400, "Committee name is required");
@@ -27,6 +28,8 @@ export const createCommittee = asyncHandler(async (req, res) => {
 
   const committee = await Committee.create({
     name,
+    committeeTypeId:committeeType,
+    chairPersonId:chairperson,
     description,
     // createdBy: createdByUserId,
     status: true,
@@ -45,7 +48,7 @@ export const createCommittee = asyncHandler(async (req, res) => {
 
 export const updateCommittee = asyncHandler(async (req, res) => {
   const { committeeId } = req.params;
-  const { name, description } = req.body;
+  const { name, committeeType,chairperson, description } = req.body;
 
   const committee = await Committee.findOne({
     where: {
@@ -72,6 +75,8 @@ export const updateCommittee = asyncHandler(async (req, res) => {
   }
 
   committee.name = name || committee.name;
+  committee.committeeTypeId = committeeType || committee.committeeTypeId;
+  committee.chairPersonId = chairperson || committee.chairPersonId;
   committee.description = description || committee.description;
 
   //committee.updatedBy = req.user.id;
@@ -326,9 +331,14 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
           },
         ],
       },
+      {
+        model:CommitteeType,
+      },
+      {
+        model:User,
+      }
     ],
   });
-
   return res
     .status(200)
     .json(

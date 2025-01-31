@@ -34,7 +34,10 @@ const User = sequelize.define(
       allowNull: true,
       unique: true,
     },
-    
+    userDescription: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

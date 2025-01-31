@@ -95,6 +95,7 @@ export const editUserTypeDetailService = async (params) => {
       calendarModule,
       userModule,
       committeeModule,
+      committeeTypeModule,
       notificationModule,
       inventoryModule,
       committeeMemberModule,
@@ -118,6 +119,7 @@ export const editUserTypeDetailService = async (params) => {
     userType.calendarModule = calendarModule;
     userType.userModule = userModule;
     userType.committeeModule = committeeModule;
+    userType.committeeTypeModule = committeeTypeModule;
     userType.notificationModule = notificationModule;
     userType.inventoryModule = inventoryModule;
     userType.committeeMemberModule = committeeMemberModule;
@@ -131,7 +133,6 @@ export const editUserTypeDetailService = async (params) => {
     userType.servicesModule = servicesModule;
 
     await userType.save();
-    console.log(userType);
 
     return userType;
   } catch (error) {
@@ -145,6 +146,7 @@ export const addUserTypeService = async (
   calendarModule,
   userModule,
   committeeModule,
+  committeeTypeModule,
   notificationModule,
   inventoryModule,
   committeeMemberModule,
@@ -169,6 +171,7 @@ export const addUserTypeService = async (
       calendarModule,
       userModule,
       committeeModule,
+      committeeTypeModule,
       notificationModule,
       inventoryModule,
       committeeMemberModule,
