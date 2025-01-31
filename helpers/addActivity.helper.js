@@ -26,3 +26,4 @@ export const addActivity = async (userId, activityDescription) => {
 
   return user;
 };
+
