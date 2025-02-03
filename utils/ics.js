@@ -68,6 +68,40 @@ END:VCALENDAR`;
   return { filePath, fileName: `room_meeting_${Date.now()}.ics` };
 };
 
+const meetingSwapICSFile = (eventDetails) => {
+  const {
+    uid,
+    dtstamp,
+    dtstart,
+    dtend,
+    summary,
+    description,
+    location,
+    sequence,
+  } = eventDetails;
+
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${dtstamp}
+DTSTART:${dtstart}
+DTEND:${dtend}
+SUMMARY:${summary}
+DESCRIPTION:${description}
+LOCATION:${location}
+SEQUENCE:${sequence}
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR`;
+
+  const filePath = `./public/ics/room_meeting_${Date.now()}.ics`;
+  fs.writeFileSync(filePath, icsContent);
+  return { filePath, fileName: `room_meeting_${Date.now()}.ics` };
+};
+
 const postponeICSFile = (eventDetails) => {
   const {
     uid,
@@ -385,4 +419,4 @@ END:VCALENDAR`;
   return { filePath, fileName: `new_member_${Date.now()}.ics` };
 };
 
-export { createICSFile,updateICSFile,postponeICSFile,cancelledICSFile, formatDateToICS, eventMeetingData,updateEventMeetingData,postponeEventMeetingData,cancelledEventMeetingData, meetingStartingIn30MinData, createdMemberData, newMemberCreatedICSFile };
+export { createICSFile,updateICSFile,postponeICSFile,cancelledICSFile, formatDateToICS, eventMeetingData,updateEventMeetingData,postponeEventMeetingData,cancelledEventMeetingData, meetingStartingIn30MinData, createdMemberData, newMemberCreatedICSFile, meetingSwapICSFile };
