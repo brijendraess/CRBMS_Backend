@@ -10,6 +10,7 @@ import {
   getTodaysMeetings,
   postponeMeeting,
   updateMeeting,
+  swapMeeting
 } from "../controllers/meeting.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -23,6 +24,7 @@ router.route("/todays-meetings").get(getTodaysMeetings);
 router.route("/get-single-meeting/:meetingId").get(verifyJWT, getMeetingsById);
 router.route("/update-meeting/:meetingId").put(verifyJWT, updateMeeting);
 router.route("/postpone-meeting/:meetingId").put(verifyJWT, postponeMeeting);
+router.route("/swap-meeting/:meetingId").put(verifyJWT, swapMeeting);
 router.route("/delete-meeting/:meetingId").put(verifyJWT, deleteMeeting);
 router.route("/update-meeting-status/:meetingId").put(verifyJWT, changeMeetingStatus);
 

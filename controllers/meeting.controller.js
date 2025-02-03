@@ -13,6 +13,7 @@ import CommitteeMember from "../models/CommitteeMember.models.js";
 import Committee from "../models/Committee.models.js";
 import Notification from "../models/Notification.models.js";
 import {
+  meetingSwapEmail,
   roomBookingChangeStatusEmail,
   roomBookingEmail,
   roomBookingPostponeEmail,
@@ -41,6 +42,7 @@ import {
   sendSmsToAdminForApproveHelper,
 } from "../helpers/sendSMS.helper.js";
 import { formatTimeShort, getFormattedDate } from "../utils/utils.js";
+import moment from "moment";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
@@ -819,6 +821,7 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
       meetingDate: date,
       startTime: { [Op.lt]: formattedEndTime },
       endTime: { [Op.gt]: newFormattedStartTimeChecked },
+      id: { [Op.not]: meetingId },
     },
   });
 
@@ -1434,4 +1437,345 @@ export const getMeetingsById = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(200, { meetings }, "Meetings  Retrieved Successfully")
     );
+});
+
+
+export const swapMeeting = asyncHandler(async (req, res) => {
+  const { meetingId } = req.params;
+  const requestedMeetingId = req.body.meetingId;
+
+  const meeting = await Meeting.findByPk(meetingId);
+  if (!meeting) throw new ApiError(404, "Meeting not found");
+
+  const requestedMeeting = await Meeting.findByPk(requestedMeetingId);
+  if (!requestedMeeting) throw new ApiError(404, "Requested Meeting not found");
+
+   // Ensure neither meeting has a "completed" or "cancelled" status
+   if (["completed", "cancelled"].includes(meeting.status) || ["completed", "cancelled"].includes(requestedMeeting.status)) {
+    throw new ApiError(400, "Cannot swap meetings that are completed or cancelled");
+  }
+
+  const room = await Room.findByPk(meeting?.roomId);
+  if (!room) throw new ApiError(404, "Room not found");
+
+  const requestedMeetingRoom = await Room.findByPk(requestedMeeting?.roomId);
+  if (!requestedMeetingRoom) throw new ApiError(404, "Requested Meeting Room not found");
+
+  const sanitationPeriod = room.dataValues.sanitationPeriod || 0;
+  const requestedMeetingRoomSanitation = requestedMeetingRoom.dataValues.sanitationPeriod || 0;
+
+  // Convert meeting times to moments
+  const meetingStartMoment = moment(`${meeting.meetingDate} ${meeting.startTime}`, "YYYY-MM-DD HH:mm:ss");
+  const meetingEndMoment = moment(`${meeting.meetingDate} ${meeting.endTime}`, "YYYY-MM-DD HH:mm:ss").add(sanitationPeriod, "minutes");
+  
+  const requestedMeetingStartMoment = moment(`${requestedMeeting.meetingDate} ${requestedMeeting.startTime}`, "YYYY-MM-DD HH:mm:ss");
+  const requestedMeetingEndMoment = moment(`${requestedMeeting.meetingDate} ${requestedMeeting.endTime}`, "YYYY-MM-DD HH:mm:ss").add(requestedMeetingRoomSanitation, "minutes");
+
+  // Calculate durations
+  const meetingDuration = moment.duration(meetingEndMoment.diff(meetingStartMoment)).asMinutes();
+  const requestedDuration = moment.duration(requestedMeetingEndMoment.diff(requestedMeetingStartMoment)).asMinutes();
+  
+
+  // New start and end times after swap
+  const newMeetingStart = requestedMeeting.startTime;
+  const newMeetingEnd = moment(requestedMeetingStartMoment).add(meetingDuration, "minutes").subtract(requestedMeetingRoomSanitation, "minutes").format("HH:mm:ss");
+  
+  const newRequestedMeetingStart = meeting.startTime;
+  const newRequestedMeetingEnd = moment(meetingStartMoment).add(requestedDuration, "minutes").subtract(sanitationPeriod, "minutes").format("HH:mm:ss");
+
+  const newMeetingRoomId = requestedMeeting.roomId;
+  const newRequestedMeetingRoomId = meeting.roomId;
+
+  // Check if the swapped times are available
+  const existingMeetingTiming = await Meeting.findOne({
+    where: {
+      id: { [Op.not]: requestedMeeting.id },
+      roomId: newMeetingRoomId,
+      meetingDate: requestedMeeting.meetingDate,
+      startTime: { [Op.lt]: newMeetingEnd },
+      endTime: { [Op.gt]: newMeetingStart },
+    },
+  });
+
+  const existingRequestedMeetingTiming = await Meeting.findOne({
+    where: {
+      id: { [Op.not]: meeting.id },
+      roomId: newRequestedMeetingRoomId,
+      meetingDate: meeting.meetingDate,
+      startTime: { [Op.lt]: newRequestedMeetingEnd },
+      endTime: { [Op.gt]: newRequestedMeetingStart },
+    },
+  });
+
+  // If no conflicts, swap the meetings
+  if (!existingMeetingTiming && !existingRequestedMeetingTiming) {
+    meeting.roomId = newMeetingRoomId;
+    meeting.startTime = newMeetingStart;
+    meeting.endTime = newMeetingEnd;
+    meeting.meetingDate = requestedMeeting.meetingDate;
+
+    requestedMeeting.roomId = newRequestedMeetingRoomId;
+    requestedMeeting.startTime = newRequestedMeetingStart;
+    requestedMeeting.endTime = newRequestedMeetingEnd;
+    requestedMeeting.meetingDate = meeting.meetingDate;
+
+    await meeting.save();
+    await requestedMeeting.save();
+
+    const meetingAttendees = meeting.attendees;
+    const meetingCommittees = meeting.committees;
+
+    const requestedMeetingAttendees = requestedMeeting.attendees;
+    const requestedMeetingCommittees = requestedMeeting.committees;
+
+    const rooms = await getRoomByIdService(meeting.roomId);
+    const organizer = await getUserByIdService(meeting.organizerId);
+
+    const requestedMeetingRooms = await getRoomByIdService(meeting.roomId);
+    const requestedMeetingOrganizer = await getUserByIdService(meeting.organizerId);
+
+    const emailTemplateValues = {
+      subject: meeting?.subject,
+      agenda: meeting?.agenda,
+      notes: meeting.notes,
+      roomName: rooms[0]?.dataValues?.name,
+      bookingDate: meeting.meetingDate,
+      startTime: meeting?.startTime,
+      endTime: meeting?.endTime,
+      location: rooms[0]?.dataValues?.Location?.locationName,
+      organizerName: organizer[0]?.dataValues?.fullname,
+    };
+
+    const eventData = {
+      uid: meeting?.id,
+      meetingDate: meeting?.meetingDate,
+      startTime: meeting?.startTime,
+      endTime: meeting?.endTime,
+      summary: meeting?.subject,
+      description: meeting?.notes,
+      location: rooms[0]?.dataValues?.Location?.locationName,
+      sequence: 2,
+    };
+
+    const requestedMeetingEmailTemplateValues = {
+      subject: requestedMeeting?.subject,
+      agenda: requestedMeeting?.agenda,
+      notes: requestedMeeting.notes,
+      roomName: requestedMeetingRooms[0]?.dataValues?.name,
+      bookingDate: requestedMeeting.meetingDate,
+      startTime: requestedMeeting?.startTime,
+      endTime: requestedMeeting?.endTime,
+      location: requestedMeetingRooms[0]?.dataValues?.Location?.locationName,
+      organizerName: requestedMeetingOrganizer[0]?.dataValues?.fullname,
+    };
+
+    const requestedMeetingEventData = {
+      uid: requestedMeeting?.id,
+      meetingDate: requestedMeeting?.meetingDate,
+      startTime: requestedMeeting?.startTime,
+      endTime: requestedMeeting?.endTime,
+      summary: requestedMeeting?.subject,
+      description: requestedMeeting?.notes,
+      location: requestedMeetingRooms[0]?.dataValues?.Location?.locationName,
+      sequence: 2,
+    };
+    const eventDetails = updateEventMeetingData(eventData);
+    const requestedMeetingEventDetails = updateEventMeetingData(requestedMeetingEventData);
+
+    // Notifications will be done here
+    meetingAttendees &&
+    meetingAttendees.forEach(async (attendee) => {
+        const members = await User.findOne({
+          where: { id: attendee },
+          attributes: ["id", "email", "fullname"],
+        });
+        // Header notification section
+        await Notification.create({
+          type: "Meeting Update",
+          message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+          userId: members?.dataValues?.id,
+          isRead: false,
+          meetingId: meetingId,
+        });
+
+        // Sending email to all attendees
+        const emailTemplateValuesSet = {
+          ...emailTemplateValues,
+          recipientName: members?.dataValues?.fullname,
+        };
+        await meetingSwapEmail(
+          eventDetails,
+          members?.dataValues?.email,
+          emailTemplateValuesSet
+        );
+        // End of Email sending section
+
+        // Send SMS to all user
+        const templateValue = {
+          name: members?.dataValues?.fullname
+        };
+        sendSmsEditedHelper(members?.dataValues?.phoneNumber, templateValue);
+        // End of the SMS section
+    });
+
+    // Notifications will be done here for all committee user
+    meetingCommittees &&
+    meetingCommittees.forEach(async (committee) => {
+        const members = await CommitteeMember.findAll({
+          where: { committeeId: committee },
+          include: [
+            {
+              model: User,
+              attributes: ["email", "fullname", "avatarPath"],
+            },
+            {
+              model: Committee,
+            },
+          ],
+        });
+        members &&
+          members?.map(async (member) => {
+            // Header notification section
+            await Notification.create({
+              type: "Meeting Update",
+              message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+              userId: member?.dataValues?.userId,
+              isRead: false,
+              meetingId: meetingId,
+            });
+
+            // Sending email to all attendees
+            const emailTemplateValuesSet = {
+              ...emailTemplateValues,
+              recipientName: member?.dataValues?.User?.dataValues?.fullname,
+            };
+            await meetingSwapEmail(
+              eventDetails,
+              member?.dataValues?.User?.dataValues?.email,
+              emailTemplateValuesSet
+            );
+            // End of Email sending section
+
+            // Send SMS to all user
+            const templateValue = {
+              name: member?.dataValues?.fullname
+            };
+            sendSmsEditedHelper(member?.dataValues?.phoneNumber, templateValue);
+            // End of the SMS section
+          });
+    });
+
+    // Notifications will be done here for all quest user
+    meeting.guestUser &&
+    meeting.guestUser.split(",").forEach(async (quest) => {
+        // Sending email to all attendees
+        const recipientName = quest.split("@")[0];
+        const emailTemplateValuesSet = {
+          ...emailTemplateValues,
+          recipientName: recipientName,
+        };
+        await meetingSwapEmail(eventDetails, quest, emailTemplateValuesSet);
+        // End of Email sending section
+    });
+
+    // Notifications will be done here
+    requestedMeetingAttendees &&
+    requestedMeetingAttendees.forEach(async (attendee) => {
+        const members = await User.findOne({
+          where: { id: attendee },
+          attributes: ["id", "email", "fullname"],
+        });
+        // Header notification section
+        await Notification.create({
+          type: "Meeting Update",
+          message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+          userId: members?.dataValues?.id,
+          isRead: false,
+          meetingId: meetingId,
+        });
+
+        // Sending email to all attendees
+        const emailTemplateValuesSet = {
+          ...requestedMeetingEmailTemplateValues,
+          recipientName: members?.dataValues?.fullname,
+        };
+        await meetingSwapEmail(
+          requestedMeetingEventDetails,
+          members?.dataValues?.email,
+          emailTemplateValuesSet
+        );
+        // End of Email sending section
+
+        // Send SMS to all user
+        const templateValue = {
+          name: members?.dataValues?.fullname
+        };
+        sendSmsEditedHelper(members?.dataValues?.phoneNumber, templateValue);
+        // End of the SMS section
+    });
+
+    // Notifications will be done here for all committee user
+    requestedMeetingCommittees &&
+    requestedMeetingCommittees.forEach(async (committee) => {
+        const members = await CommitteeMember.findAll({
+          where: { committeeId: committee },
+          include: [
+            {
+              model: User,
+              attributes: ["email", "fullname", "avatarPath"],
+            },
+            {
+              model: Committee,
+            },
+          ],
+        });
+        members &&
+          members?.map(async (member) => {
+            // Header notification section
+            await Notification.create({
+              type: "Meeting Update",
+              message: `The meeting "${meeting?.dataValues?.subject}" has been Update.`,
+              userId: member?.dataValues?.userId,
+              isRead: false,
+              meetingId: meetingId,
+            });
+
+            // Sending email to all attendees
+            const emailTemplateValuesSet = {
+              ...requestedMeetingEmailTemplateValues,
+              recipientName: member?.dataValues?.User?.dataValues?.fullname,
+            };
+            await meetingSwapEmail(
+              requestedMeetingEventDetails,
+              member?.dataValues?.User?.dataValues?.email,
+              emailTemplateValuesSet
+            );
+            // End of Email sending section
+
+            // Send SMS to all user
+            const templateValue = {
+              name: member?.dataValues?.fullname
+            };
+            sendSmsEditedHelper(member?.dataValues?.phoneNumber, templateValue);
+            // End of the SMS section
+          });
+    });
+
+    // Notifications will be done here for all quest user
+    requestedMeeting.guestUser &&
+    requestedMeeting.guestUser.split(",").forEach(async (quest) => {
+        // Sending email to all attendees
+        const recipientName = quest.split("@")[0];
+        const emailTemplateValuesSet = {
+          ...requestedMeetingEmailTemplateValues,
+          recipientName: recipientName,
+        };
+        await meetingSwapEmail(requestedMeetingEventDetails, quest, emailTemplateValuesSet);
+        // End of Email sending section
+  });
+
+    return res.status(200).json({ message: "Meeting swapped successfully", data: meeting });
+  }
+
+  throw new ApiError(400, "Unable to swap because of unavailability.");
 });

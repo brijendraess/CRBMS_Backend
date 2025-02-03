@@ -122,6 +122,7 @@ export const addUserType = asyncHandler(async (req, res) => {
     calendarModule,
     userModule,
     committeeModule,
+    committeeTypeModule,
     notificationModule,
     inventoryModule,
     committeeMemberModule,

@@ -2,7 +2,7 @@
 import fs from "fs";
 import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TEMPLATE, ROOM_BOOKING_START_REQUEST_TEMPLATE, ROOM_BOOKING_ORGANIZER_REQUEST_TEMPLATE, ROOM_BOOKING_PENDING_REQUEST_TEMPLATE, ROOM_BOOKING_POSTPONE_REQUEST_TEMPLATE, ROOM_BOOKING_REQUEST_TEMPLATE, ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE, ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE, MEETING_STARTING_IN_30_MIN, ROOM_MEETING_REQUEST_TEMPLATE, NEW_MEMBER_ADDED } from "../mailTemplate/roomEmailTemplate.js";
 import { replacePlaceholders } from "../utils/emailResponse.js";
-import { cancelledICSFile, createICSFile, meetingStartingIn30MinData, newMemberCreatedICSFile, postponeICSFile, updateICSFile } from "../utils/ics.js";
+import { cancelledICSFile, createICSFile, meetingStartingIn30MinData, meetingSwapICSFile, newMemberCreatedICSFile, postponeICSFile, updateICSFile } from "../utils/ics.js";
 import { transporter, sender } from "./nodemailer.config.js";
 
 export const roomBookingEmail = async (eventDetails,email, emailTemplateValues) => {
@@ -63,6 +63,26 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
     } catch (error) {
       console.error("Error sending room booking update confirmation email:", error);
       throw new Error(`Error sending room booking update confirmation email: ${error}`);
+    }
+  };
+
+  export const meetingSwapEmail = async (eventDetails,email, emailTemplateValues) => {
+    try {
+      const {filePath,fileName} = meetingSwapICSFile(eventDetails);
+      await transporter.sendMail({
+        from: `"${sender.name}" <${sender.email}>`,
+        to: process.env.RECEIVER_EMAIL,
+        subject: "Room Booking Update Confirmation",
+        html:replacePlaceholders(ROOM_BOOKING_UPDATE_REQUEST_TEMPLATE,emailTemplateValues),
+        attachments: [
+          {
+          filename: fileName,
+          path: filePath,
+        }],
+      });
+    } catch (error) {
+      console.error("Error sending room booking swap confirmation email:", error);
+      throw new Error(`Error sending room booking swap confirmation email: ${error}`);
     }
   };
 
