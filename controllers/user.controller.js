@@ -28,6 +28,7 @@ import Meeting from "../models/Meeting.models.js";
 import Room from "../models/Room.models.js";
 import MeetingCommittee from "../models/MeetingCommittee.js";
 import CommitteeType from "../models/CommitteeType.models.js";
+import axios from "axios";
 
 // COOKIE OPTIONS
 const options = {
@@ -1033,6 +1034,76 @@ const permanentDeleteUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User permanently deleted successfully"));
 });
 
+const zimbraTest = asyncHandler(async (req, res) => {
+  try {
+    const username = process.env.ZIMBRA_USERNAME;
+    const password = process.env.ZIMBRA_PASSWORD;
+
+    const url = 'https://mail.parliament.go.ke/service/home/crbms@parliament.go.ke/calendar?fmt=ics';
+
+    const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+
+    let calendarData;
+    // Make the GET request
+    axios.get(url, {
+      headers: {
+        'Authorization': auth
+      },
+      responseType: 'arraybuffer'  // For downloading binary data (like .ics files)
+    })
+      .then(response => {
+        // Write the downloaded calendar to a file
+        const filePath = `./public/zimbraIcs/zimbra_calendar_${Date.now()}.ics`;
+        fs.writeFileSync(filePath, response.data);
+
+        console.log('Calendar downloaded successfully!');
+      })
+      .catch(error => {
+        console.error('Error downloading calendar:', error.message);
+      });
+
+//     const eventData = `BEGIN:VCALENDAR
+// VERSION:2.0
+// BEGIN:VEVENT
+// SUMMARY:Sample Event
+// LOCATION:Location Name
+// DESCRIPTION:Please Ignore. This is a test event created via Zimbra API.
+// DTSTART:20250211T103000Z
+// DTEND:20250211T113000Z
+// END:VEVENT
+// END:VCALENDAR`;
+
+//     // Make the POST request to add the event to the calendar
+    // axios.post(url, eventData, {
+    //   headers: {
+    //     'Authorization': auth,
+    //     // 'Content-Type': 'application/json',  // Set content type to JSON
+    //     'Content-Type': 'text/calendar; charset=UTF-8'
+    //   }
+    // })
+    //   .then(response => {
+    //     console.log('Event added successfully:', response.data);
+    //   })
+    //   .catch(error => {
+    //     console.log(error, "errrrr")
+    //     console.error('Error adding event:', error.message);
+    //   });
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          {},
+          `Calendar fetched successfully.`
+        )
+      );
+  }
+  catch (error) {
+    throw new ApiError(404, "Something went wrong.");
+  }
+});
+
 export {
   registerUser,
   loginUser,
@@ -1055,4 +1126,5 @@ export {
   resetPasswordAfterLoggedIn,
   updateUserSingleProfile,
   getAllActiveUsers,
+  zimbraTest
 };

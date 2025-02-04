@@ -197,7 +197,7 @@ export const roomBookingRequestEmail = async (eventDetails,email, emailTemplateV
 
 export const memberCreatedEmail = async (eventDetails,email, emailTemplateValues) => {
   try {
-    const {filePath,fileName} = newMemberCreatedICSFile(eventDetails);
+    // const {filePath,fileName} = newMemberCreatedICSFile(eventDetails);
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
       to: process.env.RECEIVER_EMAIL,
