@@ -21,6 +21,7 @@ import {
   resetPasswordAfterLoggedIn,
   updateUserSingleProfile,
   getAllActiveUsers,
+  zimbraTest,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -28,6 +29,8 @@ import upload from "../middlewares/multer.middleware.js";
 const router = Router();
 
 router.route("/check-auth").get(verifyJWT, checkAuth);
+
+// router.route("/zimbra").get(zimbraTest);
 
 // POST Register /api/v1/auth
 router.route("/register").post(upload.single("avatar"), registerUser);

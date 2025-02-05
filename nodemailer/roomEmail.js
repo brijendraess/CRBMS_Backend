@@ -197,17 +197,17 @@ export const roomBookingRequestEmail = async (eventDetails,email, emailTemplateV
 
 export const memberCreatedEmail = async (eventDetails,email, emailTemplateValues) => {
   try {
-    const {filePath,fileName} = newMemberCreatedICSFile(eventDetails);
+    // const {filePath,fileName} = newMemberCreatedICSFile(eventDetails);
     await transporter.sendMail({
       from: `"${sender.name}" <${sender.email}>`,
       to: process.env.RECEIVER_EMAIL,
       subject: "Account Credentials Created",
       html:replacePlaceholders(NEW_MEMBER_ADDED,emailTemplateValues),
-      attachments: [
-        {
-        filename: fileName,
-        path: filePath,
-      }],
+      // attachments: [
+      //   {
+      //   filename: fileName,
+      //   path: filePath,
+      // }],
     });
   } catch (error) {
     console.error("Error sending mail to new member added: ", error);
