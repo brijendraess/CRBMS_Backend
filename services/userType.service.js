@@ -108,6 +108,7 @@ export const editUserTypeDetailService = async (params) => {
       userRoleModule,
       userTypeId,
       servicesModule,
+      isAdmin
     } = params;
     const userType = await UserType.findByPk(userTypeId);
 
@@ -131,6 +132,7 @@ export const editUserTypeDetailService = async (params) => {
     userType.reportModule = reportModule;
     userType.userRoleModule = userRoleModule;
     userType.servicesModule = servicesModule;
+    userType.isAdmin = isAdmin;
 
     await userType.save();
 
