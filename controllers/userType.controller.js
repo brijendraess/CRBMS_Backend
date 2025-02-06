@@ -67,6 +67,7 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     meetingLogsModule,
     userRoleModule,
     servicesModule,
+    isAdmin
   } = req.body;
 
   const params = {
@@ -87,6 +88,7 @@ export const editUserTypeDetail = asyncHandler(async (req, res) => {
     userRoleModule,
     userTypeId,
     servicesModule,
+    isAdmin
   };
   const result = await editUserTypeDetailService(params);
   return res
