@@ -15,5 +15,5 @@ export const transporter = nodemailer.createTransport({
 // Define your sender's information
 export const sender = {
   email: process.env.SMTP_EMAIL,
-  name: "Suraj Singh Negi",
+  name: "CRBMS",
 };
