@@ -1478,10 +1478,10 @@ export const swapMeeting = asyncHandler(async (req, res) => {
 
   // New start and end times after swap
   const newMeetingStart = requestedMeeting.startTime;
-  const newMeetingEnd = moment(requestedMeetingStartMoment).add(meetingDuration, "minutes").subtract(requestedMeetingRoomSanitation, "minutes").format("HH:mm:ss");
+  const newMeetingEnd = moment(requestedMeetingStartMoment).add(meetingDuration, "minutes").subtract(sanitationPeriod, "minutes").format("HH:mm:ss");
   
   const newRequestedMeetingStart = meeting.startTime;
-  const newRequestedMeetingEnd = moment(meetingStartMoment).add(requestedDuration, "minutes").subtract(sanitationPeriod, "minutes").format("HH:mm:ss");
+  const newRequestedMeetingEnd = moment(meetingStartMoment).add(requestedDuration, "minutes").subtract(requestedMeetingRoomSanitation, "minutes").format("HH:mm:ss");
 
   const newMeetingRoomId = requestedMeeting.roomId;
   const newRequestedMeetingRoomId = meeting.roomId;
