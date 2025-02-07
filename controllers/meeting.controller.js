@@ -1486,6 +1486,9 @@ export const swapMeeting = asyncHandler(async (req, res) => {
   const newMeetingRoomId = requestedMeeting.roomId;
   const newRequestedMeetingRoomId = meeting.roomId;
 
+  const newMeetingDate = requestedMeeting.meetingDate;
+  const newRequestedMeetingDate = meeting.meetingDate;
+
   // Check if the swapped times are available
   const existingMeetingTiming = await Meeting.findOne({
     where: {
@@ -1512,12 +1515,12 @@ export const swapMeeting = asyncHandler(async (req, res) => {
     meeting.roomId = newMeetingRoomId;
     meeting.startTime = newMeetingStart;
     meeting.endTime = newMeetingEnd;
-    meeting.meetingDate = requestedMeeting.meetingDate;
+    meeting.meetingDate = newMeetingDate;
 
     requestedMeeting.roomId = newRequestedMeetingRoomId;
     requestedMeeting.startTime = newRequestedMeetingStart;
     requestedMeeting.endTime = newRequestedMeetingEnd;
-    requestedMeeting.meetingDate = meeting.meetingDate;
+    requestedMeeting.meetingDate = newRequestedMeetingDate;
 
     await meeting.save();
     await requestedMeeting.save();
