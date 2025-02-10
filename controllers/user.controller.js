@@ -1039,28 +1039,31 @@ const zimbraTest = asyncHandler(async (req, res) => {
     const username = process.env.ZIMBRA_USERNAME;
     const password = process.env.ZIMBRA_PASSWORD;
 
-    const url = 'https://mail.parliament.go.ke/service/home/crbms@parliament.go.ke/calendar?fmt=ics';
+    // const otherUserEmail = "rachel.kairu@parliament.go.ke";
 
-    const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+    // // const url = `https://mail.parliament.go.ke/service/home/${otherUserEmail}/calendar?fmt=ics`;
+    // const url = `https://mail.parliament.go.ke/home/${otherUserEmail}/calendar?fmt=ics`;
 
-    let calendarData;
-    // Make the GET request
-    axios.get(url, {
-      headers: {
-        'Authorization': auth
-      },
-      responseType: 'arraybuffer'  // For downloading binary data (like .ics files)
-    })
-      .then(response => {
-        // Write the downloaded calendar to a file
-        const filePath = `./public/zimbraIcs/zimbra_calendar_${Date.now()}.ics`;
-        fs.writeFileSync(filePath, response.data);
+    // const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
 
-        console.log('Calendar downloaded successfully!');
-      })
-      .catch(error => {
-        console.error('Error downloading calendar:', error.message);
-      });
+    // let calendarData;    
+    // // Make the GET request
+    // axios.get(url, {
+    //   headers: {
+    //     'Authorization':  auth
+    // }  // For downloading binary data (like .ics files)
+    // })
+    //   .then(response => {
+    //     // Write the downloaded calendar to a file
+    //     const filePath = `./public/zimbraIcs/zimbra_calendar_${Date.now()}.ics`;
+    //     fs.writeFileSync(filePath, response.data);
+
+    //     console.log('Calendar downloaded successfully!');
+    //   })
+    //   .catch(error => {
+    //     console.log(error, "errr")
+    //     console.error('Error downloading calendar:', error.message);
+    //   });
 
 //     const eventData = `BEGIN:VCALENDAR
 // VERSION:2.0
