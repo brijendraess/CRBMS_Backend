@@ -1036,24 +1036,30 @@ const permanentDeleteUser = asyncHandler(async (req, res) => {
 
 const zimbraTest = asyncHandler(async (req, res) => {
   try {
-    const username = process.env.ZIMBRA_USERNAME;
-    const password = process.env.ZIMBRA_PASSWORD;
-
     // const otherUserEmail = "rachel.kairu@parliament.go.ke";
+    // const username = process.env.ZIMBRA_USERNAME;
+    // const password = process.env.ZIMBRA_PASSWORD;
+    // const password = process.env.SMTP_PASSWORD;
 
-    // // const url = `https://mail.parliament.go.ke/service/home/${otherUserEmail}/calendar?fmt=ics`;
+    
+
+    // const url = `https://mail.parliament.go.ke/service/home/${username}/calendar?fmt=ics`;
+    // const url = 'https://mail.parliament.go.ke/service/home/crbms@parliament.go.ke/calendar?fmt=ics';
     // const url = `https://mail.parliament.go.ke/home/${otherUserEmail}/calendar?fmt=ics`;
 
     // const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+    // console.log(auth, "auth")
 
     // let calendarData;    
-    // // Make the GET request
+    // Make the GET request
     // axios.get(url, {
     //   headers: {
     //     'Authorization':  auth
-    // }  // For downloading binary data (like .ics files)
+    //   },
+    //   responseType: 'text'  // For downloading binary data (like .ics files)
     // })
     //   .then(response => {
+    //     console.log(response, "responseee")
     //     // Write the downloaded calendar to a file
     //     const filePath = `./public/zimbraIcs/zimbra_calendar_${Date.now()}.ics`;
     //     fs.writeFileSync(filePath, response.data);
