@@ -292,6 +292,10 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
       ],
     });
 
+    console.log(members, "mem")
+
+    const filteredMembers = members.filter((member) => member.User != null)
+
     if (!members.length) {
       return res
         .status(200)
@@ -302,7 +306,7 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          { members },
+          { members: filteredMembers },
           "Committee members retrieved successfully"
         )
       );
@@ -339,12 +343,22 @@ export const getAllCommittees = asyncHandler(async (req, res) => {
       }
     ],
   });
+
+  const filteredCommittees = committees.map(committee => {
+    // Convert Sequelize instance to plain object
+    const plainCommittee = committee.toJSON();
+
+    // Filter out CommitteeMembers with User === null
+    plainCommittee.CommitteeMembers = plainCommittee.CommitteeMembers.filter(member => member.User !== null);
+
+    return plainCommittee;
+  });
   return res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        { committees },
+        { committees: filteredCommittees },
         "Committees with members retrieved successfully"
       )
     );
