@@ -446,7 +446,59 @@ const getAllUsers = asyncHandler(async (req, res) => {
     order: [["createdAt", "DESC"]],
     // limit: parseInt(limit),
     //offset: parseInt(offset),
-    paranoid: false,
+    paranoid: true,
+    // deletedAt: 
+  });
+
+  if (!users) {
+    throw new ApiError(500, "No User Found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        users,
+        totalUsers: users.count,
+        // totalPages: Math.ceil(users.count / limit),
+        // currentPage: page,
+      },
+      "Users retrieved successfully"
+    )
+  );
+});
+
+const getAllNotDeletedUsers = asyncHandler(async (req, res) => {
+  // const { page = 1, limit = 10 } = req.query;
+  // const offset = (parseInt(page) - 1) * parseInt(limit);
+
+  const loggedInUser = await User.findByPk(req.user.id, {
+    include: [
+      {
+        model: UserType,
+      },
+    ],
+  });
+  if (!loggedInUser) {
+    throw new ApiError(400, "Please Log In");
+  }
+
+  // if (!loggedInUser) {
+  //   throw new ApiError(403, "Access denied. Admins only.");
+  // }
+
+  const users = await User.findAndCountAll({
+    attributes: { exclude: ["password", "refreshToken"] },
+    include: [
+      {
+        model: UserType,
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+    // limit: parseInt(limit),
+    //offset: parseInt(offset),
+    paranoid: true,
+    // deletedAt: 
   });
 
   if (!users) {
@@ -490,7 +542,7 @@ const getAllActiveUsers = asyncHandler(async (req, res) => {
     order: [["createdAt", "DESC"]],
     // limit: parseInt(limit),
     //offset: parseInt(offset),
-    paranoid: false,
+    paranoid: true,
     isBlocked:false
   });
 
@@ -1044,7 +1096,7 @@ const zimbraTest = asyncHandler(async (req, res) => {
     
 
     // const url = `https://mail.parliament.go.ke/service/home/${username}/calendar?fmt=ics`;
-    // const url = 'https://mail.parliament.go.ke/service/home/crbms@parliament.go.ke/calendar?fmt=ics';
+    // const url = `https://mail.parliament.go.ke/service/home/${username}/calendar?fmt=ics`;
     // const url = `https://mail.parliament.go.ke/home/${otherUserEmail}/calendar?fmt=ics`;
 
     // const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
@@ -1135,5 +1187,6 @@ export {
   resetPasswordAfterLoggedIn,
   updateUserSingleProfile,
   getAllActiveUsers,
-  zimbraTest
+  zimbraTest,
+  getAllNotDeletedUsers
 };

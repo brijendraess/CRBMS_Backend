@@ -74,8 +74,30 @@ export const getMeetingCount = asyncHandler(async (req, res, next) => {
     },
   };
 
+  const cancelledWhereCondition = {
+    meetingDate: {
+      [Op.between]: [
+        startDate.toISOString().split("T")[0],
+        endDate.toISOString().split("T")[0],
+      ],
+    },
+    status: "cancelled"
+  };
+
+  const completedWhereCondition = {
+    meetingDate: {
+      [Op.between]: [
+        startDate.toISOString().split("T")[0],
+        endDate.toISOString().split("T")[0],
+      ],
+    },
+    status: "completed"
+  };
+
   // Count the meetings
   const meetingCount = await Meeting.count({ where: whereCondition });
+  const cancelledMeetingCount = await Meeting.count({ where: cancelledWhereCondition });
+  const completedMeetingCount = await Meeting.count({ where: completedWhereCondition });
 
   // Send the response
   res
@@ -83,7 +105,7 @@ export const getMeetingCount = asyncHandler(async (req, res, next) => {
     .json(
       new ApiResponse(
         200,
-        { meetingCount },
+        { meetingCount, cancelledMeetingCount, completedMeetingCount },
         "Meeting count fetched successfully"
       )
     );
