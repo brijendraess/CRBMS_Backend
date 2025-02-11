@@ -34,4 +34,24 @@ function formatPhoneNumber(number) {
     )} ${amPm}`;
   }
 
-export {generateMD5,formatPhoneNumber,getFormattedDate,formatTimeShort}
+  function getUniqueTopUsers (users) {
+    const uniqueUsers = new Map();
+    users.sort((a, b) => b.organizerPercentage - a.organizerPercentage);
+    for (const user of users) {
+        uniqueUsers.set(user.userData.id, user); // Use userData.id as unique key
+        if (uniqueUsers.size === 10) break; // Stop once we have 10 unique users
+    }
+    return Array.from(uniqueUsers.values());
+  };
+
+  function getUniqueTopRooms (rooms) {
+    const uniqueRooms = new Map();
+    rooms.sort((a, b) => b.roomPercentage - a.roomPercentage);
+    for (const room of rooms) {
+        uniqueRooms.set(room.roomData.id, room); // Use roomData.id as unique key
+        if (uniqueRooms.size === 10) break; // Stop once we have 10 unique rooms
+    }
+    return Array.from(uniqueRooms.values());
+};
+
+export {generateMD5,formatPhoneNumber,getFormattedDate,formatTimeShort, getUniqueTopUsers, getUniqueTopRooms}

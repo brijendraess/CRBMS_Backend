@@ -18,7 +18,7 @@ export const transporter = nodemailer.createTransport({
   secure: true, // true for port 465, false for 587
   auth: {
     user: process.env.SMTP_EMAIL, // Your Zimbra email
-    pass: process.env.SMTP_PASSWORD, // Your Zimbra email password
+    pass: process.env.ZIMBRA_PASSWORD, // Your Zimbra email password
   },
   tls: {
     rejectUnauthorized: false, // Use this if you face certificate issues
