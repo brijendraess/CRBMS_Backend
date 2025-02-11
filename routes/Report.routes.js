@@ -5,6 +5,7 @@ import {
   getFoodBeverageCount,
   getInactiveCommitteeCount,
   getMeetingCount,
+  getMeetingRoomStats,
   getRoomCount,
   getUserCount,
 } from "../controllers/report.controller.js";
@@ -18,5 +19,6 @@ router.route("/room-count").get(getRoomCount);
 router.route("/meeting-count").get(getMeetingCount);
 router.route("/active-committee-count").get(getActiveCommitteeCount);
 router.route("/inactive-committee-count").get(getInactiveCommitteeCount);
+router.route("/stats").get(getMeetingRoomStats);
 
 export default router;
