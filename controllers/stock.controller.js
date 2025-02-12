@@ -4,6 +4,12 @@ import {
   addStockService,
   checkStockService,
   stockHistoryService,
+  allPendingAmenitiesService,
+  allPendingFoodBeverageService,
+  changeStatusPendingAmenitiesService,
+  allPendingAmenitiesCountService,
+  allPendingFoodBeverageCountService,
+  changeStatusPendingFoodBeverageService,
 } from "../services/stock.service.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -14,6 +20,60 @@ export const allStock = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, { result }, "user type retrieved successfully"));
+});
+
+// Getting all pending Amenities
+export const allPendingAmenities = asyncHandler(async (req, res) => {
+  const result = await allPendingAmenitiesService();
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { result }, "Pending amenities retrieved successfully"));
+});
+
+// Getting all pending Amenities
+export const allPendingAmenitiesCount = asyncHandler(async (req, res) => {
+  const result = await allPendingAmenitiesCountService();
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { result }, "Pending amenities count retrieved successfully"));
+});
+
+// Change status for pending amenities
+export const changeStatusPendingAmenities = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await changeStatusPendingAmenitiesService(id);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { result }, "Amenities status changed successfully")
+    );
+});
+
+// Getting all pending Food Beverage 
+export const allPendingFoodBeverage = asyncHandler(async (req, res) => {
+  const result = await allPendingFoodBeverageService();
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { result }, "Pending food beverage retrieved successfully"));
+});
+
+// Getting all pending Food Beverage
+export const allPendingFoodBeverageCount = asyncHandler(async (req, res) => {
+  const result = await allPendingFoodBeverageCountService();
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { result }, "Pending food beverage count retrieved successfully"));
+});
+
+// Change status for pending amenities
+export const changeStatusPendingFoodBeverage = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await changeStatusPendingFoodBeverageService(id);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { result }, "food beverage status changed successfully")
+    );
 });
 
 // Getting all Stock history
