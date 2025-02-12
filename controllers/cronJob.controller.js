@@ -12,6 +12,7 @@ import Notification from "../models/Notification.models.js";
 import { cancelledEventMeetingData } from "../utils/ics.js";
 import { roomBookingChangeStatusEmail, roomBookingOrganizerEmail } from "../nodemailer/roomEmail.js";
 import { eFileController } from "./eFile.comtroller.js";
+import CommitteeMember from "../models/CommitteeMember.models.js";
 
 export const autoMeetingCron = asyncHandler(async (req, res) => {
   const startOfToday = new Date();

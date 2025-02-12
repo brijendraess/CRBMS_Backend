@@ -29,6 +29,7 @@ import Room from "../models/Room.models.js";
 import MeetingCommittee from "../models/MeetingCommittee.js";
 import CommitteeType from "../models/CommitteeType.models.js";
 import axios from "axios";
+import MeetingUser from "../models/MeetingUser.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -1111,7 +1112,6 @@ const zimbraTest = asyncHandler(async (req, res) => {
     //   responseType: 'text'  // For downloading binary data (like .ics files)
     // })
     //   .then(response => {
-    //     console.log(response, "responseee")
     //     // Write the downloaded calendar to a file
     //     const filePath = `./public/zimbraIcs/zimbra_calendar_${Date.now()}.ics`;
     //     fs.writeFileSync(filePath, response.data);
@@ -1165,6 +1165,102 @@ const zimbraTest = asyncHandler(async (req, res) => {
   }
 });
 
+const isUserAvailable = asyncHandler(async (req, res) => {
+  const bodyData = req.body;
+
+  let attendees = bodyData.attendees.map((attendee) => {
+    return {
+      attendeeId: attendee,
+      isAvailable: true 
+    }
+  })
+
+
+  const date = new Date(bodyData.meetingDate);
+  const requiredDate = date.toLocaleDateString("en-CA");
+
+  const requiredStartTime = new Date(bodyData.startTime).toTimeString().split(" ")[0];
+  const requiredEndTime = new Date(bodyData.endTime).toTimeString().split(" ")[0];
+
+  const existingMeetings = await Meeting.findAll({where: {
+    meetingDate: {
+      [Op.eq]: requiredDate, 
+    },
+    status: { [Op.notIn]: ["completed", "cancelled"] },
+    [Op.and]: [
+      { startTime: { [Op.lt]: requiredEndTime } }, 
+      { endTime: { [Op.gt]: requiredStartTime } }
+    ],
+  }})
+
+  let notAvailableAttendees = [];
+  if(existingMeetings.length > 0){
+    for(let meeting of existingMeetings){  
+      const notAvailableAttendee = attendees.find((attendee) => attendee.attendeeId === meeting.dataValues.organizerId);
+      if(notAvailableAttendee){
+        notAvailableAttendees.push({attendeeId: meeting.dataValues.organizerId, isAvailable: false})
+      }
+
+      const meetingCommittees = await MeetingCommittee.findAll({
+        where: {
+          MeetingId: meeting?.dataValues?.id,
+        },
+      });
+
+      const meetingAttendees = await MeetingUser.findAll({
+        where: {
+          MeetingId: meeting?.dataValues?.id,
+        },
+      });
+
+      if(meetingAttendees.length > 0){
+        const meetingAttendeeIds = meetingAttendees.map((meetingAttendee) => String(meetingAttendee.dataValues.UserId));
+
+        for(let attendee of attendees){
+          if(meetingAttendeeIds.find((meetingAttendeeId) => attendee.attendeeId === meetingAttendeeId)){
+            notAvailableAttendees.push({attendeeId: attendee.attendeeId, isAvailable: false})
+          }
+        }
+      }
+
+      if(meetingCommittees.length > 0){
+        for(let meetingCommittee of meetingCommittees){
+          const committeeMembers = await CommitteeMember?.findAll({
+            where: { committeeId: meetingCommittee?.dataValues?.CommitteeId },
+            include: [
+              {
+                model: User,
+                attributes: ["email", "fullname", "avatarPath"],
+              },
+            ],
+          });
+
+
+          if(committeeMembers.length > 0){
+            const memberIds = committeeMembers.map((member) => member?.dataValues?.userId && String(member?.dataValues?.userId));
+
+            for(let attendee of attendees){
+              if(memberIds.find((memberId) => memberId === attendee.attendeeId)){
+                notAvailableAttendees.push({attendeeId: attendee.attendeeId, isAvailable: false})
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {notAvailableAttendees},
+        `User fetched successfully`
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -1188,5 +1284,6 @@ export {
   updateUserSingleProfile,
   getAllActiveUsers,
   zimbraTest,
-  getAllNotDeletedUsers
+  getAllNotDeletedUsers,
+  isUserAvailable
 };
