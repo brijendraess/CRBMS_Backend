@@ -23,6 +23,7 @@ import {
   getAllActiveUsers,
   zimbraTest,
   getAllNotDeletedUsers,
+  isUserAvailable,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -59,6 +60,9 @@ router.route("/active/users").get(verifyJWT, getAllNotDeletedUsers);
 
 // get all active users
 router.route("/active-users").get(verifyJWT, getAllActiveUsers);
+
+// get if user is available
+router.route("/isAvailable").post(isUserAvailable);
 
 // Update my profile
 router

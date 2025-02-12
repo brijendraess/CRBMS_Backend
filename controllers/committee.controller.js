@@ -292,8 +292,6 @@ export const getCommitteeMembers = asyncHandler(async (req, res) => {
       ],
     });
 
-    console.log(members, "mem")
-
     const filteredMembers = members.filter((member) => member.User != null)
 
     if (!members.length) {

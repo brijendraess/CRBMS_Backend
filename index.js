@@ -87,6 +87,10 @@ cron.schedule('*/5 * * * *', async () => {
   await CronHelper.sendSmsAndEmailAfterCompletion();
 })
 
+// cron.schedule('*/30 * * * *', async () => {
+//   await CronHelper.eFileCronData();
+// })
+
 const syncModels = async () => {
   let syncTable;
   try {

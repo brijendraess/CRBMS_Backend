@@ -424,4 +424,28 @@ export class CronHelper {
         }
         // console.log("Cron executed successfully.")
     }
+
+    static async eFileCronData() {
+        const response = await axios.get(
+            `${process.env.EFILE_ACCESS_URL}/api/v1/user-list`,
+            { withCredentials: true }
+        );
+        response?.data?.userList?.map(async (data) => {
+            const existingUser = await User.findAndCountAll({
+                where: { userName: data?.username },
+            });
+
+            if (existingUser?.count === 0) {
+                await User.create({
+                    email: data?.email,
+                    password: data?.password,
+                    userName: data?.username,
+                    fullname: data?.fname,
+                    phoneNumber: data?.mobile,
+                    avatarPath: data?.profile_image,
+                });
+            }
+        });
+        console.log("User list executed successfully!!")
+    };
 }
