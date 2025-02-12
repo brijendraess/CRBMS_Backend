@@ -7,8 +7,11 @@ dotenv.config();
 export const transporter = nodemailer.createTransport({
   service: "gmail", // Or "Yahoo", "Outlook", or another provider
   auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
+    user: process.env.SMTP_EMAIL, // Your Zimbra email
+    pass: process.env.ZIMBRA_PASSWORD, // Your Zimbra email password
+  },
+  tls: {
+    rejectUnauthorized: false, // Use this if you face certificate issues
   },
 });
 

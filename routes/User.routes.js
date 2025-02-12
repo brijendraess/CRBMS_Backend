@@ -22,6 +22,7 @@ import {
   updateUserSingleProfile,
   getAllActiveUsers,
   zimbraTest,
+  getAllNotDeletedUsers,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -52,6 +53,9 @@ router.route("/my-profile").get(verifyJWT, getMyProfile);
 
 // get all users
 router.route("/users").get(verifyJWT, getAllUsers);
+
+// get all not deleted users
+router.route("/active/users").get(verifyJWT, getAllNotDeletedUsers);
 
 // get all active users
 router.route("/active-users").get(verifyJWT, getAllActiveUsers);
