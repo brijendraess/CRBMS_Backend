@@ -105,7 +105,6 @@ export const getAllAmenitiesActiveQuantityService = async (roomId) => {
 
 export const editAmenityQuantityService = async (
   quantity,
-  status,
   updatedBy,
   amenityQuantityId
 ) => {
@@ -119,7 +118,6 @@ export const editAmenityQuantityService = async (
     }
 
     roomAmenityQuantity.quantity = quantity ?? roomAmenityQuantity.quantity;
-    roomAmenityQuantity.status = status ?? roomAmenityQuantity.status;
     roomAmenityQuantity.updatedBy = updatedBy ?? roomAmenityQuantity.updatedBy;
 
     await roomAmenityQuantity.save();
@@ -238,7 +236,6 @@ export const getAllFoodBeverageActiveService = async (roomId) => {
 };
 
 export const editFoodBeverageService = async (
-  status,
   updatedBy,
   foodBeverageId
 ) => {
@@ -249,7 +246,6 @@ export const editFoodBeverageService = async (
       throw new ApiError(404, "Room food beverage not found");
     }
 
-    roomFoodBeverage.status = status ?? roomFoodBeverage.status;
     roomFoodBeverage.updatedBy = updatedBy ?? roomFoodBeverage.updatedBy;
 
     await roomFoodBeverage.save();

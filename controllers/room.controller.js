@@ -533,11 +533,10 @@ export const createAmenityQuantity = asyncHandler(async (req, res) => {
 
 export const editAmenityQuantity = asyncHandler(async (req, res) => {
   const { amenityQuantityId } = req.params;
-  const { quantity, status, updatedBy } = req.body;
+  const { quantity, updatedBy } = req.body;
 
   const result = await editAmenityQuantityService(
     quantity,
-    status,
     updatedBy,
     amenityQuantityId
   );
@@ -623,10 +622,9 @@ export const createFoodBeverage = asyncHandler(async (req, res) => {
 
 export const editFoodBeverage = asyncHandler(async (req, res) => {
   const { foodBeverageId } = req.params;
-  const { status, updatedBy } = req.body;
+  const {  updatedBy } = req.body;
 
   const result = await editFoodBeverageService(
-    status,
     updatedBy,
     foodBeverageId
   );

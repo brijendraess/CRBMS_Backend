@@ -36,7 +36,7 @@ export const deleteServices = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { result }, "services deleted successfully"));
 });
 
-// Deleting services
+// Change status for services
 export const changeStatusServices = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const result = await changeStatusServicesService(id);
