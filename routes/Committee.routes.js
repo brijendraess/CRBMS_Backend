@@ -9,6 +9,7 @@ import {
   getCommitteeByUserId,
   getCommitteeDetails,
   getCommitteeMembers,
+  isCommitteeAvailable,
   removeUserFromCommittee,
   updateCommittee,
 } from "../controllers/committee.controller.js";
@@ -36,6 +37,8 @@ router
 
 router.route("/my-committee").get(verifyJWT, getCommitteeByUserId);
 router.route("/active-committee").get(getAllActiveCommittees);
+router.route("/isAvailable").post(isCommitteeAvailable);
+
 
 router.route("/change-status").put(changeCommitteeStatus);
 

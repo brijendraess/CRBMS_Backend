@@ -7,6 +7,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { sequelize } from "../database/database.js";
 import { Op, QueryTypes, Sequelize } from "sequelize";
 import CommitteeType from "../models/CommitteeType.models.js";
+import Meeting from "../models/Meeting.models.js";
+import MeetingCommittee from "../models/MeetingCommittee.js";
 
 export const createCommittee = asyncHandler(async (req, res) => {
   const { name,committeeType,chairperson, description, createdByUserId } = req.body;
@@ -506,6 +508,69 @@ export const getCommitteeByUserId = asyncHandler(async (req, res) => {
         200,
         { committees: dataUserCommittees },
         "Committees with members retrieved successfully for the user"
+      )
+    );
+});
+
+export const isCommitteeAvailable = asyncHandler(async (req, res) => {
+
+  const bodyData = req.body;
+
+  let committees = bodyData.committees.map((committee) => {
+    return {
+      committeeId: committee,
+      isAvailable: true 
+    }
+  })
+
+
+  const date = new Date(bodyData.meetingDate);
+  const requiredDate = date.toLocaleDateString("en-CA");
+
+  const requiredStartTime = new Date(bodyData.startTime).toTimeString().split(" ")[0];
+  const requiredEndTime = new Date(bodyData.endTime).toTimeString().split(" ")[0];
+
+  const existingMeetings = await Meeting.findAll({where: {
+    meetingDate: {
+      [Op.eq]: requiredDate, 
+    },
+    status: { [Op.notIn]: ["completed", "cancelled"] },
+    [Op.and]: [
+      { startTime: { [Op.lt]: requiredEndTime } }, 
+      { endTime: { [Op.gt]: requiredStartTime } }
+    ],
+  }})
+
+  let notAvailableCommittees = [];
+
+  if(existingMeetings.length > 0){
+    for(let meeting of existingMeetings){
+      const meetingCommittees = await MeetingCommittee.findAll({
+        where: {
+          MeetingId: meeting?.dataValues?.id,
+        },
+      });
+
+      const committeeIds = meetingCommittees.map((meetingCommittee) => String(meetingCommittee?.dataValues?.CommitteeId));
+
+      if(meetingCommittees.length > 0){
+        for(let committee of committees){
+          if(committeeIds.find((committeeId) => committeeId === committee.committeeId )){
+            notAvailableCommittees.push({committeeId: committee.committeeId, isAvailable: false})
+          }
+        }
+      }
+    }
+  }
+
+  
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { notAvailableCommittees },
+        "Fetched Successfully."
       )
     );
 });
