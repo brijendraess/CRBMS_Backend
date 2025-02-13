@@ -143,6 +143,16 @@ const registerUser = asyncHandler(async (req, res) => {
       await UserServices.bulkCreate(servicesEntries, { validate: true });
     }
 
+    // For Zimbra 
+  if(req.body.zimbraUsername && req.body.zimbraPassword){
+    const hashedZimbraPassword = generateMD5(req.body.zimbraPassword);
+
+    newUser.zimbraPassword = hashedZimbraPassword;
+    newUser.zimbraUsername = req.body.zimbraUsername;
+
+    await newUser.save();
+  }
+
     const createdUser = await User.findByPk(newUser.id, {
       attributes: { exclude: ["password", "refreshToken"] },
     });

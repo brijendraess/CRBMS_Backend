@@ -97,6 +97,14 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    zimbraUsername: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    zimbraPassword: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     tableName: "users",
