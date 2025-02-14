@@ -330,6 +330,10 @@ const sendOTPAgain = asyncHandler(async (req, res) => {
 
 // LogOut
 const logoutUser = asyncHandler(async (req, res) => {
+  const user = await User.findByPk(req.user.id);
+
+  user.lastLoggedIn = new Date().toISOString();
+  await user.save();
   res.clearCookie("accessToken");
   res.status(200).json({ message: "Logout successful" });
 });
