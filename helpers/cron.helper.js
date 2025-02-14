@@ -11,6 +11,7 @@ import { getRoomByIdService } from "../services/Room.service.js";
 import { getUserByIdService } from "../services/User.service.js";
 import { cancelledEventMeetingData, eventMeetingData, meetingStartingIn30MinData, updateEventMeetingData } from "../utils/ics.js";
 import { sendSms30MinBefore, sendSmsCompleteHelper } from "./sendSMS.helper.js";
+import ZimbraMeetings from "../models/ZimbraMeeting.model.js";
 
 export class CronHelper {
     static async sendSmsAndEmailBefore30Min() {
@@ -446,6 +447,70 @@ export class CronHelper {
                 });
             }
         });
+        console.log("User list executed successfully!!")
+    };
+
+    static async syncZimbraEvents() {
+        const users = await User.findAll();
+
+        for(let user of users){
+            if(user.zimbraUsername && user.zimbraPassword){
+                const url = `https://mail.parliament.go.ke/service/home/${user.zimbraUsername}/calendar?fmt=ics`;
+
+                const auth = 'Basic ' + Buffer.from(user,zimbraUsername + ':' + user.zimbraPassword).toString('base64');
+
+                axios.get(url, {
+                    headers: {
+                      'Authorization':  auth
+                    },
+                    responseType: 'text'  // For downloading binary data (like .ics files)
+                  })
+                .then(response => {
+                    // Write the downloaded calendar to a file
+                    const filePath = `./public/zimbraIcs/zimbra_calendar_${user.id}.ics`;
+                    fs.writeFileSync(filePath, response.data);
+            
+                    console.log('Calendar downloaded successfully!');
+                })
+                .catch(error => {
+                    console.log(error, "errr")
+                    console.error('Error downloading calendar:', error.message);
+                });
+
+                const filePath = `./public/zimbraIcs/zimbra_calendar_${user.id}.ics`;
+    
+                const zimbraEvents = await parseICSFile(filePath);
+            
+                for(let event of zimbraEvents){
+                  const exisitngEvent = await ZimbraMeetings.findOne({where: {zimbraCalUid: event.uid}});
+                  if(!exisitngEvent){
+                    const eventData = {
+                      summary: event.summary,
+                      description: event.description,
+                      location: event.location,
+                      zimbraCalUid: event.uid,
+                      startDate: new Date(
+                        event.startDate.replace(
+                          /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
+                          "$1-$2-$3T$4:$5:$6Z"
+                        )
+                      ),
+                      endDate: new Date(
+                        event.endDate.replace(
+                          /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
+                          "$1-$2-$3T$4:$5:$6Z"
+                        )
+                      ),
+                      status: event.status,
+                      userId: user.id
+                    }
+            
+                    await ZimbraMeetings.create(eventData);
+                  }
+                }
+
+            }
+        }
         console.log("User list executed successfully!!")
     };
 }

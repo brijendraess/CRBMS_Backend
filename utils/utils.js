@@ -1,4 +1,5 @@
 import crypto from "crypto"
+import fs from "fs";
 
 function generateMD5(data) {
     return crypto.createHash('md5').update(data, 'utf8').digest('hex');
@@ -54,4 +55,38 @@ function formatPhoneNumber(number) {
     return Array.from(uniqueRooms.values());
 };
 
-export {generateMD5,formatPhoneNumber,getFormattedDate,formatTimeShort, getUniqueTopUsers, getUniqueTopRooms}
+const parseICSFile = (filePath) => {
+  try {
+    // Read the .ics file
+    const icsData = fs.readFileSync(filePath, "utf-8");
+
+    // Split the content by each event
+    const eventBlocks = icsData.split("BEGIN:VEVENT").slice(1);
+
+    // Parse events
+    const events = eventBlocks.map((eventBlock) => {
+      const eventData = eventBlock.split("\n").map((line) => line.trim());
+
+      const event = {};
+      eventData.forEach((line) => {
+        if (line.startsWith("UID:")) event.uid = line.replace("UID:", "").trim();
+        if (line.startsWith("SUMMARY:")) event.summary = line.replace("SUMMARY:", "").trim();
+        if (line.startsWith("DESCRIPTION:")) event.description = line.replace("DESCRIPTION:", "").trim();
+        if (line.startsWith("LOCATION:")) event.location = line.replace("LOCATION:", "").trim();
+        if (line.startsWith("DTSTART:")) event.startDate = line.replace("DTSTART:", "").trim();
+        if (line.startsWith("DTEND:")) event.endDate = line.replace("DTEND:", "").trim();
+        if (line.startsWith("STATUS:")) event.status = line.replace("STATUS:", "").trim();
+      });
+
+      return event;
+    });
+
+    return events;
+  } catch (error) {
+    console.error("Error reading ICS file:", error);
+    return [];
+  }
+};
+
+
+export {generateMD5,formatPhoneNumber,getFormattedDate,formatTimeShort, getUniqueTopUsers, getUniqueTopRooms, parseICSFile}

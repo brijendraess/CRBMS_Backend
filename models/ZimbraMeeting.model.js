@@ -10,6 +10,11 @@ const ZimbraMeetings = sequelize.define(
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
     },
+    zimbraCalUid: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: true
+    },
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
@@ -23,18 +28,21 @@ const ZimbraMeetings = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    summary: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
     startDate: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     endDate: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     status: {
       type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: "scheduled",
+      allowNull: true,
     },
     location: {
       type: DataTypes.STRING(255),
