@@ -16,7 +16,7 @@ import { Op } from "sequelize";
 import fs from "fs";
 import path from "path";
 import CommitteeMember from "../models/CommitteeMember.models.js";
-import { generateMD5 } from "../utils/utils.js";
+import { generateMD5, parseICSFile } from "../utils/utils.js";
 import UserType from "../models/UserType.model.js";
 import UserServices from "../models/UserServices.models.js";
 import Committee from "../models/Committee.models.js";
@@ -30,6 +30,7 @@ import MeetingCommittee from "../models/MeetingCommittee.js";
 import CommitteeType from "../models/CommitteeType.models.js";
 import axios from "axios";
 import MeetingUser from "../models/MeetingUser.js";
+import ZimbraMeetings from "../models/ZimbraMeeting.model.js";
 
 // COOKIE OPTIONS
 const options = {
@@ -142,6 +143,16 @@ const registerUser = asyncHandler(async (req, res) => {
       await UserServices.sync(); // Ensure table exists
       await UserServices.bulkCreate(servicesEntries, { validate: true });
     }
+
+    // For Zimbra 
+  if(req.body.zimbraUsername && req.body.zimbraPassword){
+    const hashedZimbraPassword = generateMD5(req.body.zimbraPassword);
+
+    newUser.zimbraPassword = hashedZimbraPassword;
+    newUser.zimbraUsername = req.body.zimbraUsername;
+
+    await newUser.save();
+  }
 
     const createdUser = await User.findByPk(newUser.id, {
       attributes: { exclude: ["password", "refreshToken"] },
@@ -1113,7 +1124,7 @@ const zimbraTest = asyncHandler(async (req, res) => {
     // })
     //   .then(response => {
     //     // Write the downloaded calendar to a file
-    //     const filePath = `./public/zimbraIcs/zimbra_calendar_${Date.now()}.ics`;
+    //     const filePath = `./public/zimbraIcs/zimbra_calendar_.ics`;
     //     fs.writeFileSync(filePath, response.data);
 
     //     console.log('Calendar downloaded successfully!');
@@ -1261,6 +1272,56 @@ const isUserAvailable = asyncHandler(async (req, res) => {
     );
 });
 
+const saveZimbraEvents = asyncHandler(async (req, res) => {
+  try {
+    // const filePath = `./public/zimbraIcs/zimbra_calendar_.ics`;
+    
+    // const zimbraEvents = await parseICSFile(filePath);
+
+    // for(let event of zimbraEvents){
+    //   const exisitngEvent = await ZimbraMeetings.findOne({where: {zimbraCalUid: event.uid}});
+    //   if(!exisitngEvent){
+    //     const eventData = {
+    //       summary: event.summary,
+    //       description: event.description,
+    //       location: event.location,
+    //       zimbraCalUid: event.uid,
+    //       startDate: new Date(
+    //         event.startDate.replace(
+    //           /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
+    //           "$1-$2-$3T$4:$5:$6Z"
+    //         )
+    //       ),
+    //       endDate: new Date(
+    //         event.endDate.replace(
+    //           /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
+    //           "$1-$2-$3T$4:$5:$6Z"
+    //         )
+    //       ),
+    //       status: event.status,
+    //       userId: "8da34ecb-5b28-4cc7-bbca-606e7a11f369"
+    //     }
+
+    //     await ZimbraMeetings.create(eventData);
+    //   }
+    // }
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          {},
+          `Calendar fetched successfully.`
+        )
+      );
+  }
+  catch (error) {
+    console.error("Error inserting into DB:", error);
+    throw new ApiError(404, "Something went wrong.");
+  }
+});
+
 export {
   registerUser,
   loginUser,
@@ -1285,5 +1346,6 @@ export {
   getAllActiveUsers,
   zimbraTest,
   getAllNotDeletedUsers,
-  isUserAvailable
+  isUserAvailable,
+  saveZimbraEvents
 };

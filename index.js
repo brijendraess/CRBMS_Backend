@@ -91,6 +91,10 @@ cron.schedule('*/5 * * * *', async () => {
 //   await CronHelper.eFileCronData();
 // })
 
+// cron.schedule('*/30 * * * *', async () => {
+//   await CronHelper.syncZimbraEvents();
+// })
+
 const syncModels = async () => {
   let syncTable;
   try {
