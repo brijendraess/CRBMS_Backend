@@ -47,7 +47,7 @@ router.route("/login").post(loginUser);
 router.route("/verify-otp").post(verifyOTPForLogin);
 
 // Logout
-router.route("/logout").post(logoutUser);
+router.route("/logout").post(verifyJWT, logoutUser);
 
 // Resend OTP
 router.route("/resend-otp").post(sendOTPAgain);
