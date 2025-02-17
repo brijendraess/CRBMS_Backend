@@ -12,6 +12,7 @@ import { getUserByIdService } from "../services/User.service.js";
 import { cancelledEventMeetingData, eventMeetingData, meetingStartingIn30MinData, updateEventMeetingData } from "../utils/ics.js";
 import { sendSms30MinBefore, sendSmsCompleteHelper } from "./sendSMS.helper.js";
 import ZimbraMeetings from "../models/ZimbraMeeting.model.js";
+import { decryptData } from "../utils/utils.js";
 
 export class CronHelper {
     static async sendSmsAndEmailBefore30Min() {
@@ -457,7 +458,9 @@ export class CronHelper {
             if(user.zimbraUsername && user.zimbraPassword){
                 const url = `https://mail.parliament.go.ke/service/home/${user.zimbraUsername}/calendar?fmt=ics`;
 
-                const auth = 'Basic ' + Buffer.from(user,zimbraUsername + ':' + user.zimbraPassword).toString('base64');
+                const password = decryptData(user.zimbraPassword, user.id + "SaltForPassword");
+
+                const auth = 'Basic ' + Buffer.from(user.zimbraUsername + ':' + password).toString('base64');
 
                 axios.get(url, {
                     headers: {

@@ -5,6 +5,26 @@ function generateMD5(data) {
     return crypto.createHash('md5').update(data, 'utf8').digest('hex');
 }
 
+function generateKey(key) {
+  return crypto.createHash('sha256').update(key).digest(); // Ensures 32-byte key
+}
+
+function encryptData(data, key){
+  const keyBuffer = generateKey(key);
+  const cipher = crypto.createCipheriv('aes-256-ecb', keyBuffer, null);
+  let encrypted = cipher.update(data, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return encrypted;
+}
+
+function decryptData(encryptData, key){
+  const keyBuffer = generateKey(key);
+  const decipher = crypto.createDecipheriv('aes-256-ecb', keyBuffer, null);
+  let decrypted = decipher.update(encryptData, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
 function formatPhoneNumber(number) {
     // Remove spaces and unnecessary characters
     const cleanNumber = number.replace(/\s+/g, '');
@@ -89,4 +109,4 @@ const parseICSFile = (filePath) => {
 };
 
 
-export {generateMD5,formatPhoneNumber,getFormattedDate,formatTimeShort, getUniqueTopUsers, getUniqueTopRooms, parseICSFile}
+export {generateMD5,formatPhoneNumber,getFormattedDate,formatTimeShort, getUniqueTopUsers, getUniqueTopRooms, parseICSFile, encryptData, decryptData}
