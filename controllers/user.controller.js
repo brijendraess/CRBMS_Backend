@@ -16,7 +16,7 @@ import { Op } from "sequelize";
 import fs from "fs";
 import path from "path";
 import CommitteeMember from "../models/CommitteeMember.models.js";
-import { generateMD5, parseICSFile } from "../utils/utils.js";
+import { decryptData, encryptData, generateMD5, parseICSFile } from "../utils/utils.js";
 import UserType from "../models/UserType.model.js";
 import UserServices from "../models/UserServices.models.js";
 import Committee from "../models/Committee.models.js";
@@ -31,6 +31,7 @@ import CommitteeType from "../models/CommitteeType.models.js";
 import axios from "axios";
 import MeetingUser from "../models/MeetingUser.js";
 import ZimbraMeetings from "../models/ZimbraMeeting.model.js";
+import moment from "moment";
 
 // COOKIE OPTIONS
 const options = {
@@ -146,7 +147,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // For Zimbra 
   if(req.body.zimbraUsername && req.body.zimbraPassword){
-    const hashedZimbraPassword = generateMD5(req.body.zimbraPassword);
+    const hashedZimbraPassword = encryptData(zimbraPassword, newUser.id+"SaltForPassword");
 
     newUser.zimbraPassword = hashedZimbraPassword;
     newUser.zimbraUsername = req.body.zimbraUsername;
@@ -400,6 +401,8 @@ const getUserById = asyncHandler(async (req, res) => {
     // Process result to group committees
     const userData = {
       id: result?.dataValues?.id,
+      zimbraUsername: result?.dataValues?.zimbraUsername,
+      zimbraPassword: result?.dataValues?.zimbraPassword,
       fullname: result?.dataValues?.fullname,
       userDescription: result?.dataValues?.userDescription,
       email: result?.dataValues?.email,
@@ -1208,7 +1211,31 @@ const isUserAvailable = asyncHandler(async (req, res) => {
     ],
   }})
 
+  const requiredMomentDate = moment(date).format("YYYY-MM-DD");
+
+  const requiredMomentStartTime = moment(bodyData.startTime).format("HH:mm:ss");
+  const requiredMomentEndTime = moment(bodyData.endTime).format("HH:mm:ss");
+
+  const startTimeIsoString = moment(`${requiredMomentDate}T${requiredMomentStartTime}`).toISOString();
+  const endTimeIsoString = moment(`${requiredMomentDate}T${requiredMomentEndTime}`).toISOString();
+
+  const existingZimbraEvents = await ZimbraMeetings.findAll({where: {
+    [Op.and]: [
+      { startDate: { [Op.lt]: endTimeIsoString } }, 
+      { endDate: { [Op.gt]: startTimeIsoString } }
+    ],
+  }});
+
   let notAvailableAttendees = [];
+  if(existingZimbraEvents.length > 0){
+    for(let event of existingZimbraEvents){
+      const notAvailableAttendee = attendees.find((attendee) => attendee.attendeeId === event.userId);
+      if(notAvailableAttendee){
+        notAvailableAttendees.push({attendeeId: event.userId, isAvailable: false})
+      }
+    }
+  }
+
   if(existingMeetings.length > 0){
     for(let meeting of existingMeetings){  
       const notAvailableAttendee = attendees.find((attendee) => attendee.attendeeId === meeting.dataValues.organizerId);
@@ -1265,6 +1292,11 @@ const isUserAvailable = asyncHandler(async (req, res) => {
     }
   }
 
+  if(notAvailableAttendees.length > 0){
+    notAvailableAttendees = notAvailableAttendees.filter((value, index, self) =>
+      index === self.findIndex((t) => t.attendeeId === value.attendeeId)
+    );
+  }
   res
     .status(200)
     .json(
@@ -1326,6 +1358,49 @@ const saveZimbraEvents = asyncHandler(async (req, res) => {
   }
 });
 
+const syncUserZimbra = asyncHandler(async (req, res) => {
+  const { id } = req.params; 
+  const reqBody = req.body;
+
+  const zimbraUsername = reqBody.zimbraUsername;
+  const zimbraPassword = reqBody.zimbraPassword;
+
+  const hashedZimbraPassword = encryptData(zimbraPassword, id+"SaltForPassword");
+
+  const user = await User.findByPk(id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found"); // Throw ApiError for not found
+  }
+
+  user.zimbraUsername = zimbraUsername;
+  user.zimbraPassword = hashedZimbraPassword;
+
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Zimbra Synced successfully"));
+});
+
+const unSyncUserZimbra = asyncHandler(async (req, res) => {
+  const { id } = req.params; 
+  const user = await User.findByPk(id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found"); // Throw ApiError for not found
+  }
+
+  user.zimbraUsername = null;
+  user.zimbraPassword = null;
+
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Unsynced successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -1351,5 +1426,7 @@ export {
   zimbraTest,
   getAllNotDeletedUsers,
   isUserAvailable,
-  saveZimbraEvents
+  saveZimbraEvents,
+  syncUserZimbra,
+  unSyncUserZimbra
 };

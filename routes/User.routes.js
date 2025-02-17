@@ -25,6 +25,8 @@ import {
   getAllNotDeletedUsers,
   isUserAvailable,
   saveZimbraEvents,
+  syncUserZimbra,
+  unSyncUserZimbra,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -111,5 +113,11 @@ router.route("/soft-delete/:id").delete(softDeleteUser);
 
 // Permanent-Delete User Profile
 router.route("/permanent-delete/:id").delete(permanentDeleteUser);
+
+// Update user for zimbra
+router.route("/zimbra/sync/:id").put(syncUserZimbra);
+
+// Unsync Zimbra
+router.route("/zimbra/unsync/:id").put(unSyncUserZimbra);
 
 export default router;
