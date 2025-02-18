@@ -387,6 +387,9 @@ export const getAllActiveCommittees = asyncHandler(async (req, res) => {
           },
         ],
       },
+      {
+        model: CommitteeType
+      }
     ],
   });
 
