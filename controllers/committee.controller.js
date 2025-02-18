@@ -21,11 +21,12 @@ export const createCommittee = asyncHandler(async (req, res) => {
     where: {
       name,
       deletedAt: null,
+      committeeTypeId: committeeType
     },
   });
 
   if (existingCommittee) {
-    throw new ApiError(400, "Committee with this name already exists");
+    throw new ApiError(400, "Committee with this name already exists with same committee type.");
   }
 
   const committee = await Committee.create({
