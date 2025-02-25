@@ -4,6 +4,7 @@ import { ROOM_BOOKING_CANCEL_REQUEST_TEMPLATE, ROOM_BOOKING_COMPLETED_REQUEST_TE
 import { replacePlaceholders } from "../utils/emailResponse.js";
 import { cancelledICSFile, createICSFile, meetingStartingIn30MinData, meetingSwapICSFile, newMemberCreatedICSFile, postponeICSFile, updateICSFile } from "../utils/ics.js";
 import { transporter, sender } from "./nodemailer.config.js";
+import QRCode from 'qrcode';
 
 export const roomBookingEmail = async (eventDetails,email, emailTemplateValues) => {
   try {
@@ -129,6 +130,9 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
       }
     }else if(meetingStatus==='scheduled'){
       const {filePath,fileName} = createICSFile(eventDetails);
+      const qrValue = JSON.stringify(process.env.CLIENT_URL + "/dashboard"); // Convert booking details to JSON string
+      const qrCodeBuffer = await QRCode.toBuffer(qrValue);
+      emailTemplateValues = {... emailTemplateValues, qrCode: 'cid:qrcode'};
       transporterData={
         from: `"${sender.name}" <${sender.email}>`,
         to: process.env.RECEIVER_EMAIL,
@@ -137,6 +141,12 @@ export const roomBookingPostponeEmail = async (eventDetails,email, emailTemplate
         attachments: [{
           filename: fileName,
           path: filePath,
+        },
+        {
+          filename: 'qrcode.png',
+          content: qrCodeBuffer,
+          encoding: 'base64',
+          cid: 'qrcode' // This is the CID reference
         }],
       }
       }else{
