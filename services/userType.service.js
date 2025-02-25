@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import UserType from "../models/UserType.model.js";
 import { ApiError } from "../utils/ApiError.js";
 
@@ -24,7 +25,7 @@ export const singleUserTypeDetailService = async (id) => {
 
 export const allUserTypeDetailService = async () => {
   try {
-    const userType = await UserType.findAll();
+    const userType = await UserType.findAll({paranoid: false, where: {isAdmin: {[Op.ne]: "admin" }}});
     if (!userType) {
       throw new ApiError(404, "No user type found");
     }
