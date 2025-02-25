@@ -524,6 +524,8 @@ export const ROOM_BOOKING_SCHEDULED_REQUEST_TEMPLATE=`<!DOCTYPE html>
                 <li><strong>Location:</strong> {location}</li>
                 <li><strong>Organizer:</strong> {organizerName}</li>
             </ul>
+            <p>Scan the QR code below for more details:</p>
+            <img src="cid:qrcode" alt="QR Code">
         <div class="footer">
             <p>If you have any questions, feel free to reach out to us.</p>
             <p>This is an automated email, please do not reply.</p>
