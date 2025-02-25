@@ -43,6 +43,9 @@ import {
 } from "../helpers/sendSMS.helper.js";
 import { formatTimeShort, getFormattedDate } from "../utils/utils.js";
 import moment from "moment";
+import MeetingAttendeeType from "../models/MeetingAttendeeType.js";
+import UserType from "../models/UserType.model.js";
+import CommitteeType from "../models/CommitteeType.models.js";
 
 export const addMeeting = asyncHandler(async (req, res) => {
   const {
@@ -59,6 +62,7 @@ export const addMeeting = asyncHandler(async (req, res) => {
     isPrivate,
     attendees,
     committees,
+    attendeesType
   } = req.body;
 
   const userId = req.user.id;
@@ -129,6 +133,15 @@ export const addMeeting = asyncHandler(async (req, res) => {
     MeetingId: newMeeting.dataValues.id,
     CommitteeId: committee,
   }));
+
+  const attendeesTypeArray = attendeesType.map((attendeeType) => ({
+    meetingId: newMeeting.dataValues.id,
+    userTypeId: attendeeType,
+  }));
+
+  // Bulk insert into MeetingAttendeesType
+  await MeetingAttendeeType.bulkCreate(attendeesTypeArray);
+
   // Bulk insert into MeetingUser
   await MeetingUser.bulkCreate(attendeesArray);
 
@@ -1398,6 +1411,15 @@ export const getMeetingsById = asyncHandler(async (req, res) => {
       },
       {
         model: Committee, // Many-to-Many relation through MeetingCommittee
+        include: [
+          {
+            model: CommitteeMember,
+            include: [{model: User}]
+          },
+          {
+            model: CommitteeType
+          }
+        ],
       },
       {
         model: Room,
@@ -1406,6 +1428,10 @@ export const getMeetingsById = asyncHandler(async (req, res) => {
             model: Location,
           },
         ],
+      },
+      {
+        model: UserType, // Include UserType instead of MeetingAttendeeType
+        through: { attributes: [] }, // Exclude join table fields from the response
       },
     ],
   });
