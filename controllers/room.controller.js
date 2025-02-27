@@ -30,6 +30,7 @@ import User from "../models/User.models.js";
 import Services from "../models/Services.models.js";
 import FoodBeverage from "../models/FoodBeverage.model.js";
 import RoomFoodBeverage from "../models/RoomFoodBeverage.models.js";
+import moment from "moment";
 
 export const createRoom = asyncHandler(async (req, res) => {
   const {
@@ -104,6 +105,10 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     filterCapacity,
   } = req.query;
 
+  const meetingDate = filterDate ? moment(new Date(filterDate)).format("YYYY-MM-DD") : null;
+  const requiredStartTime = filterStartTime ? new Date(filterStartTime)?.toTimeString()?.split(" ")[0] : null;
+  const requiredEndTime = filterEndingTime ? new Date(filterEndingTime)?.toTimeString()?.split(" ")[0] : null;
+
   const user = req.user.UserType.isAdmin === "admin";
   // Checking the available time of the room
   const sanitationPeriod = 15;
@@ -127,28 +132,33 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     ? new Date(filterEndingTime).toTimeString().split(" ")[0]
     : null; // HH:mm:ss
 
-  const whereClause =
-    filterDate && formattedEndTime && newFormattedStartTimeChecked
+
+    let meetingsData = [];
+
+    if(meetingDate, requiredStartTime, requiredEndTime){
+      const whereCondition = meetingDate
       ? {
-          meetingDate: filterDate,
-          ...(formattedEndTime && { startTime: { [Op.lt]: formattedEndTime } }),
-          ...(newFormattedStartTimeChecked && {
-            endTime: { [Op.gt]: newFormattedStartTimeChecked },
-          }),
+          [Op.and]: [
+            { meetingDate }, // Only consider meetings on this date
+            {
+              [Op.and]: [
+                { startTime: { [Op.lt]: requiredEndTime } }, // Starts before given endTime
+                { endTime: { [Op.gt]: requiredStartTime } }, // Ends after given startTime
+              ],
+            },
+          ],
         }
-      : 1;
-
-  const findAvailability =
-    whereClause != 1
-      ? await Meeting.findAll({
-          where: whereClause,
-          attributes: ["roomId"],
-        })
-      : [];
-  const findAvailabilityCal = findAvailability.map(
-    (meeting) => meeting?.dataValues?.roomId
-  );
-
+      : {
+          // If meetingDate is not provided, check only time
+          [Op.and]: [
+            { startTime: { [Op.lt]: requiredEndTime } }, // Starts before given endTime
+            { endTime: { [Op.gt]: requiredStartTime } }, // Ends after given startTime
+          ],
+        };
+        meetingsData = await Meeting.findAll({
+          where: whereCondition,
+        });
+    }
   // Amenities execution
   const amenityIds = filterAmenities
     ? await RoomAmenity.findAll({
@@ -198,41 +208,81 @@ export const getAllRooms = asyncHandler(async (req, res) => {
     ? { servicesName: { [Op.in]: filterServicesCalculated } }
     : null;
 
-  const rooms = await Room.findAll({
-    where: {
-      id: {
-        [Op.notIn]: findAvailabilityCal,
+  let rooms;
+  if(meetingsData && meetingsData.length > 0){
+    const notAvailableRoomIds = meetingsData.map(
+      (meeting) => meeting?.dataValues?.roomId);
+      rooms = await Room.findAll({
+        where: {
+          id: {
+            [Op.notIn]: notAvailableRoomIds,
+          },
+          capacity: {
+            [Op.gte]: filterCapacityCalculated,
+          },
+          isAvailable: user ? { [Op.in]: [true, false] } : true,
+        },
+        include: [
+          {
+            model: Location,
+            where: whereClauseLocation || null,
+          },
+          {
+            model: Services,
+            where: whereClauseServices || null,
+          },
+          {
+            model: RoomGallery,
+          },
+          {
+            model: RoomAmenityQuantity,
+            where: whereClauseAmenityQuantity || null,
+          },
+          {
+            model: RoomFoodBeverage,
+            where: whereClauseFoodBeverage || null,
+          },
+          {
+            model: Meeting,
+          },
+        ],
+    });
+  } 
+  else{
+    rooms = await Room.findAll({
+      where: {
+        capacity: {
+          [Op.gte]: filterCapacityCalculated,
+        },
+        isAvailable: user ? { [Op.in]: [true, false] } : true,
       },
-      capacity: {
-        [Op.gte]: filterCapacityCalculated,
-      },
-      isAvailable: user ? { [Op.in]: [true, false] } : true,
-    },
-    include: [
-      {
-        model: Location,
-        where: whereClauseLocation || null,
-      },
-      {
-        model: Services,
-        where: whereClauseServices || null,
-      },
-      {
-        model: RoomGallery,
-      },
-      {
-        model: RoomAmenityQuantity,
-        where: whereClauseAmenityQuantity || null,
-      },
-      {
-        model: RoomFoodBeverage,
-        where: whereClauseFoodBeverage || null,
-      },
-      {
-        model: Meeting,
-      },
-    ],
-  });
+      include: [
+        {
+          model: Location,
+          where: whereClauseLocation || null,
+        },
+        {
+          model: Services,
+          where: whereClauseServices || null,
+        },
+        {
+          model: RoomGallery,
+        },
+        {
+          model: RoomAmenityQuantity,
+          where: whereClauseAmenityQuantity || null,
+        },
+        {
+          model: RoomFoodBeverage,
+          where: whereClauseFoodBeverage || null,
+        },
+        {
+          model: Meeting,
+        },
+      ],
+    });
+  }
+  
   return res
     .status(201)
     .json(new ApiResponse(200, { rooms }, "Rooms  Retrieved Successfully"));
