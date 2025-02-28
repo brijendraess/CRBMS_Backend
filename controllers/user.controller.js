@@ -260,7 +260,7 @@ const loginUser = asyncHandler(async (req, res) => {
   return res
     .status(201)
     .json(
-      new ApiResponse(200, { OTP }, "OTP Sent. Please Verify your OTP to Login")
+      new ApiResponse(200, { }, "OTP Sent. Please Verify your OTP to Login")
     );
 });
 
@@ -326,7 +326,7 @@ const sendOTPAgain = asyncHandler(async (req, res) => {
   // Send response indicating OTP was sent successfully
   return res
     .status(200)
-    .json(new ApiResponse(200, { newOTP }, "OTP sent successfully"));
+    .json(new ApiResponse(200, {  }, "OTP sent successfully"));
 });
 
 // LogOut

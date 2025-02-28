@@ -825,6 +825,7 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     .toTimeString()
     .split(" ")[0];
 
+  const endTimeWithAddedTime = new Date(moment(new Date(endTime)).add(extraCalculatedTime, "minutes")).toTimeString().split(" ")[0];
   // Convert startTime and endTime to TIME format
   const formattedStartTime = new Date(startTime).toTimeString().split(" ")[0]; // HH:mm:ss
   const formattedEndTime = new Date(endTime).toTimeString().split(" ")[0]; // HH:mm:ss
@@ -832,9 +833,10 @@ export const postponeMeeting = asyncHandler(async (req, res) => {
     where: {
       roomId,
       meetingDate: date,
-      startTime: { [Op.lt]: formattedEndTime },
-      endTime: { [Op.gt]: newFormattedStartTimeChecked },
+      startTime: { [Op.lt]: endTimeWithAddedTime },
+      endTime: { [Op.gt]: formattedStartTime },
       id: { [Op.not]: meetingId },
+      status: { [Op.notIn]: ["completed", "cancelled"] },
     },
   });
 
