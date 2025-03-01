@@ -291,15 +291,15 @@ const verifyOTPForLogin = asyncHandler(async (req, res) => {
 
 // SendOTPAgain
 const sendOTPAgain = asyncHandler(async (req, res) => {
-  const { userName } = req.body;
+  const { email } = req.body;
 
-  if (!userName?.trim()) {
+  if (!email?.trim()) {
     throw new ApiError(400, "user name is required");
   }
 
   // Find user in the database
   const user = await User.findOne({
-    where: { userName },
+    where: { userName: email },
     include: [
       {
         model: UserType,

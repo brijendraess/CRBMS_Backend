@@ -17,6 +17,7 @@ export const sendOTP = async (email, otp) => {
       html: VERIFICATION_EMAIL_TEMPLATE.replace("{verificationCode}", otp),
     });
     console.log("Verification email sent successfully");
+    return true
   } catch (error) {
     console.error("Error sending verification email:", error);
     throw new Error(`Error sending verification email: ${error}`);
@@ -34,6 +35,8 @@ export const sendPasswordResetEmail = async (email, resetURL) => {
       html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetURL),
     });
     console.log("Password reset email sent successfully");
+    return true
+
   } catch (error) {
     console.error("Error sending password reset email:", error);
     throw new Error(`Error sending password reset email: ${error}`);
@@ -51,6 +54,7 @@ export const sendResetSuccessEmail = async (email) => {
       html: PASSWORD_RESET_SUCCESS_TEMPLATE,
     });
     console.log("Password reset success email sent successfully");
+    return true
   } catch (error) {
     console.error("Error sending password reset success email:", error);
     throw new Error(`Error sending password reset success email: ${error}`);
